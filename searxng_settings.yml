@@ -1,0 +1,78 @@
+# SearXNG Settings for Web Search Agent
+# This configuration enables JSON format and optimizes for API usage
+
+use_default_settings: true
+
+# General settings
+search:
+  safe_search: 0  # 0=off, 1=moderate, 2=strict
+
+server:
+  secret_key: "change-this-secret-key-for-production"
+  limiter: false
+  image_proxy: true
+
+# Enable JSON format
+ui:
+  default_theme: simple
+  default_locale: ""
+  default_lang: ""
+
+# Engines configuration
+engines:
+  - name: google
+    engine: google
+    disabled: false
+    timeout: 5.0
+
+  - name: duckduckgo
+    engine: duckduckgo
+    disabled: false
+    timeout: 5.0
+
+  - name: wikipedia
+    engine: wikipedia
+    disabled: false
+
+  - name: bing
+    engine: bing
+    disabled: false
+    timeout: 5.0
+
+  - name: yahoo
+    engine: yahoo
+    disabled: false
+
+  - name: reddit
+    engine: reddit
+    disabled: false
+
+  - name: github
+    engine: github
+    disabled: false
+
+  - name: stackoverflow
+    engine: stackoverflow
+    disabled: false
+
+  - name: youtube
+    engine: youtube
+    disabled: false
+
+# Categories
+categories:
+  general:
+    - google
+    - duckduckgo
+    - bing
+    - yahoo
+    - wikipedia
+  news:
+    - google
+    - duckduckgo
+  it:
+    - github
+    - stackoverflow
+    - google
+  videos:
+    - youtube

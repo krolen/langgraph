@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:wttr.in)",
+      "WebFetch(domain:www.thestar.com)",
+      "WebFetch(domain:globalnews.ca)",
+      "WebFetch(domain:toronto.ctvnews.ca)",
+      "WebFetch(domain:www.ctvnews.ca)",
+      "Bash(git:*)",
+      "WebFetch(domain:docs.aegra.dev)",
+      "WebFetch(domain:docs.searxng.org)",
+      "Bash(uv venv:*)",
+      "Bash(which bash:*)"
+    ]
+  }
+}
