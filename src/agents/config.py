@@ -13,6 +13,9 @@ SEARXNG_URL = os.getenv("SEARXNG_URL", "http://192.168.0.100:8089")
 # AEGRA Configuration
 AEGRA_URL = os.getenv("AEGRA_URL", "http://192.168.0.100:2026")
 
+# AEGRA API Key (optional)
+AEGRA_API_KEY = os.getenv("AEGRA_API_KEY", None)
+
 # Application Configuration
 APP_HOST = os.getenv("APP_HOST", "0.0.0.0")
 APP_PORT = int(os.getenv("APP_PORT", "8000"))
@@ -46,6 +49,7 @@ class AgentConfig:
         """Initialize configuration from environment."""
         self.searxng_url = SEARXNG_URL
         self.aegra_url = AEGRA_URL
+        self.aegra_api_key = AEGRA_API_KEY
         self.app_host = APP_HOST
         self.app_port = APP_PORT
         self.debug = DEBUG

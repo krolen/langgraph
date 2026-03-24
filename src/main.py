@@ -10,9 +10,10 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from src.agent.config import config, AgentConfig
-from src.agent.web_search_agent import create_compiled_agent
-from src.agent.state import AgentState, SearchResult
+from src.agents.config import config, AgentConfig
+from src.agents.web_search_agent import create_compiled_agent
+from src.agents.langchain_web_agent import create_langchain_web_agent
+from src.agents.state import AgentState, SearchResult
 from src.tools.search import SearchTool
 
 # Configure logging
@@ -68,8 +69,9 @@ class HealthResponse(BaseModel):
     timestamp: float = Field(default_factory=time.time)
 
 
-# Global agent instance
+# Global agent instances
 _agent = None
+_langchain_agent = None
 _search_tool = None
 
 
@@ -85,10 +87,11 @@ async def lifespan(app: FastAPI):
     # Initialize search tool
     _search_tool = SearchTool(searxng_url=config.searxng_url, timeout=config.search_timeout)
 
-    # Initialize agent
+    # Initialize agents
     _agent = create_compiled_agent(searxng_url=config.searxng_url)
+    _langchain_agent = create_langchain_web_agent(searxng_url=config.searxng_url)
 
-    logger.info("Agent initialized successfully")
+    logger.info("Agents initialized successfully (standard + langchain)")
     yield
 
     # Shutdown
@@ -221,6 +224,62 @@ async def stream_search(request: SearchRequest):
     )
 
 
+@app.post("/langchain/search", response_model=SearchResultResponse, summary="Search via LangChain agent")
+async def langchain_search_endpoint(request: SearchRequest, req: Request):
+    """Perform a web search using LangChain's SearXNG integration.
+
+    This endpoint uses LangChain's built-in SearXNG tools instead of
+    the custom search tool.
+    """
+    start_time = time.time()
+
+    # Prepare search options
+    options = request.options or SearchOptions()
+
+    # Create initial state
+    initial_state = AgentState(
+        query=request.query,
+        categories=options.categories or config.default_categories,
+        limit=options.limit,
+        summarize=options.summarize,
+        _searxng_url=config.searxng_url,  # type: ignore
+    )
+
+    try:
+        # Invoke the LangChain agent
+        result = await _langchain_agent.ainvoke(initial_state)
+
+        # Calculate total time
+        total_time_ms = int((time.time() - start_time) * 1000)
+
+        # Build response
+        sources_data = []
+        for source in result.sources:
+            sources_data.append(
+                {
+                    "title": source.title,
+                    "url": source.url,
+                    "snippet": source.content[:200] if source.content else "",
+                    "engine": source.engine,
+                }
+            )
+
+        return SearchResultResponse(
+            answer=result.final_answer,
+            sources=sources_data,
+            metadata=SearchMetadata(
+                search_time_ms=total_time_ms,
+                results_count=len(result.sources),
+                query=request.query,
+                error=result.error,
+            ),
+        )
+
+    except Exception as e:
+        logger.error(f"LangChain search failed: {e}")
+        raise HTTPException(status_code=500, detail=f"LangChain search failed: {str(e)}")
+
+
 @app.get("/", summary="Root endpoint")
 async def root():
     """Root endpoint with API information."""
@@ -232,6 +291,7 @@ async def root():
             "health": "GET /health",
             "search": "POST /search",
             "stream_search": "POST /stream/search",
+            "langchain_search": "POST /langchain/search",
         },
     }
 

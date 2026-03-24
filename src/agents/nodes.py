@@ -3,7 +3,7 @@
 import time
 from typing import Any
 
-from src.agent.state import AgentState, SearchResult, add_step
+from src.agents.state import AgentState, SearchResult, add_step
 from src.tools.search import SearchTool
 
 
@@ -77,7 +77,7 @@ async def search_executor(state: AgentState) -> dict[str, Any]:
     start_time = time.time()
 
     search_tool = SearchTool(
-        searxng_url=getattr(state, "_searxng_url", "http://localhost:8089")
+        searxng_url=getattr(state, "_searxng_url", "http://192.168.0.100:8089")
     )
 
     try:

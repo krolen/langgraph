@@ -3,8 +3,8 @@
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 
-from src.agent.state import AgentState
-from src.agent.nodes import (
+from src.agents.state import AgentState
+from src.agents.nodes import (
     query_processor,
     search_executor,
     results_formatter,

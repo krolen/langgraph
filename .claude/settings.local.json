@@ -11,7 +11,24 @@
       "WebFetch(domain:docs.aegra.dev)",
       "WebFetch(domain:docs.searxng.org)",
       "Bash(uv venv:*)",
-      "Bash(which bash:*)"
+      "Bash(which bash:*)",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__new_page",
+      "mcp__idea__build_project",
+      "Bash(python:*)",
+      "Bash(curl:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-tool-call.py"
+          }
+        ]
+      }
     ]
   }
 }
