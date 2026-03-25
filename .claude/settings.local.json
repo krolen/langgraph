@@ -17,7 +17,12 @@
       "Bash(python:*)",
       "Bash(curl:*)",
       "Bash(uv sync:*)",
-      "Bash(uv run:*)"
+      "Bash(uv run:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(sed \"s/\"\"name\"\": \"\"//;s/\"\"$//\")",
+      "Read(//tmp/**)",
+      "Bash(cat:*)",
+      "Bash(python3:*)"
     ]
   },
   "hooks": {

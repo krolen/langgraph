@@ -1,0 +1,130 @@
+# SearXNG Recommended Engines
+# Curated configuration for LLM general questions and programming tasks
+#
+# Two configurations provided:
+# - minimal: ~15 engines for fast, focused search
+# - extended: ~30 engines for comprehensive coverage
+
+# =============================================================================
+# MINIMAL CONFIGURATION (~15 engines)
+# Best for: Fast responses, focused results, general + programming
+# =============================================================================
+
+# Uncomment to use minimal configuration:
+# engines:
+#   - google
+#   - duckduckgo
+#   - wikipedia
+#   - arxiv
+#   - github
+#   - stackexchange
+#   - pypi
+#   - npm
+#   - reddit
+#   - youtube
+#   - wolframalpha_api
+#   - deepl
+#   - openstreetmap
+
+# =============================================================================
+# EXTENDED CONFIGURATION (~30 engines)
+# Best for: Comprehensive coverage, diverse sources, specialized queries
+# =============================================================================
+
+engines:
+  # --- Core Search Engines ---
+  # Primary web search with broad coverage
+  - google
+
+  # Privacy-focused alternatives
+  - duckduckgo
+  - startpage  # Google results without tracking
+  - brave      # Independent index, privacy-focused
+
+  # --- Knowledge & Reference ---
+  # Encyclopedic knowledge and structured facts
+  - wikipedia  # General encyclopedia
+  - wikidata   # Structured knowledge base
+  - openlibrary # Books and literature
+
+  # --- Academic & Scientific ---
+  # Research papers and scholarly content
+  - arxiv      # CS, physics, math preprints
+  - google_scholar  # Academic papers
+  - semantic_scholar # AI-powered research
+  - pubmed     # Medical and life sciences
+
+  # --- Programming & Development ---
+  # Code, packages, and developer resources
+  - github     # Code repositories
+  - gitlab     # Alternative code hosting
+  - github_code # Code-specific GitHub search
+  - stackexchange # Stack Overflow and dev Q&A
+  - reddit     # Developer discussions
+  - hackernews # Tech news and discussions
+  - pypi       # Python packages
+  - npm        # JavaScript packages
+  - crates     # Rust packages
+  - docker_hub # Container images
+  - huggingface # ML models and datasets
+  - sourcehut  # Alternative open-source hosting
+
+  # --- Media ---
+  # Video and image content
+  - youtube    # Video tutorials and content
+  - unsplash   # Free stock photos
+  - pexels     # Free stock photos and videos
+
+  # --- News ---
+  - google_news # News aggregation
+  - reuters    # International news
+
+  # --- Utilities ---
+  - wolframalpha_api # Computational knowledge
+  - deepl      # Translation
+  - openstreetmap # Maps and locations
+
+# =============================================================================
+# DISABLED ENGINES (not recommended for general/programming use)
+# =============================================================================
+
+# These engines are excluded from the recommended set:
+
+# File sharing / torrent engines (not appropriate for general LLM use)
+# - 1337x, bt4g, btdigg, kickass, nyaa, piratebay, solidtorrents, etc.
+
+# Chinese engines (language-specific, already filtered out)
+# - 360search, acfun, baidu, bilibili, chinaso, iqiyi, quark, sogou, etc.
+
+# Regional / language-specific engines
+# - ansa (Italian news), duden (German dictionary), meadiathekviewweb (German),
+#   seznam (Czech), naver (Korean), niconico (Japanese), etc.
+
+# Specialized / niche engines
+# - alpinelinux, cachy_os, voidlinux (Linux package managers)
+# - fdroid, apkmirror, apple_app_store (app stores)
+# - artstation, pixiv, deviantart (art-specific)
+# - imdb, rottentomatoes, moviepilot (movies)
+# - bandcamp, deezer, soundcloud, spotify (music)
+# - ebay, geizhals (shopping)
+# - ahmia (dark web)
+# - command, xpath, elasticsearch, solr, mongodb, etc. (technical/back-end)
+
+# Demo / dummy engines
+# - dummy, dummy-offline, demo_online, demo_offline
+
+# =============================================================================
+# ENGINE CATEGORIES REFERENCE
+# =============================================================================
+
+# Search (6): google, duckduckgo, startpage, brave, bing, want
+# Knowledge (3): wikipedia, wikidata, openlibrary
+# Academic (6): arxiv, google_scholar, semantic_scholar, pubmed, crossref, openalex
+# Programming (12): github, gitlab, github_code, stackexchange, reddit,
+#                   hackernews, pypi, npm, crates, docker_hub, huggingface, sourcehut
+# Documentation (3): dictzone, jisho, wordnik
+# News (2): google_news, reuters
+# Media (5): youtube, unsplash, pexels, flickr, imgur
+# Maps (1): openstreetmap
+# Computational (1): wolframalpha_api
+# Translation (1): deepl

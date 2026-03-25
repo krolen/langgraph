@@ -1,0 +1,223 @@
+# SearXNG Engines with Descriptions
+# Organized by category for LLM general questions and programming
+
+## SEARCH
+
+- **google**
+  - Description: Primary general web search engine with comprehensive coverage
+  - Best for: general queries, web search, everything
+  - Website: https://www.google.com
+
+- **duckduckgo**
+  - Description: Privacy-focused search engine that doesn't track users
+  - Best for: privacy-focused search, general queries, no tracking
+  - Website: https://duckduckgo.com
+
+- **startpage**
+  - Description: Google search results with privacy protection
+  - Best for: Google quality without tracking, privacy search
+  - Website: https://startpage.com
+
+- **bing**
+  - Description: Microsoft's search engine with good web coverage
+  - Best for: general search, alternative to Google
+  - Website: https://www.bing.com
+
+- **brave**
+  - Description: Privacy-focused search with independent index
+  - Best for: privacy search, fast results, independent index
+  - Website: https://search.brave.com
+
+- **qwant**
+  - Description: European privacy-focused search engine
+  - Best for: European privacy search, general queries
+  - Website: https://www.qwant.com
+
+## KNOWLEDGE
+
+- **wikipedia**
+  - Description: Free online encyclopedia with comprehensive articles
+  - Best for: encyclopedic knowledge, definitions, general facts, background info
+  - Website: https://www.wikipedia.org
+
+- **wikidata**
+  - Description: Structured knowledge base powering Wikipedia's data
+  - Best for: structured data, entities, knowledge graphs, facts
+  - Website: https://wikidata.org
+
+- **openlibrary**
+  - Description: Free digital library of books
+  - Best for: books, literature, author information, bibliography
+  - Website: https://openlibrary.org
+
+## ACADEMIC
+
+- **arxiv**
+  - Description: Preprint server for physics, mathematics, computer science
+  - Best for: CS papers, physics, math, research papers, AI/ML research
+  - Website: https://arxiv.org
+
+- **google_scholar**
+  - Description: Search engine for scholarly literature
+  - Best for: academic papers, citations, research, scholarly articles
+  - Website: https://scholar.google.com
+
+- **semantic_scholar**
+  - Description: AI-powered research tool from Allen Institute
+  - Best for: academic papers, CS research, citation analysis
+  - Website: https://www.semanticscholar.org
+
+- **pubmed**
+  - Description: Database of biomedical and life sciences articles
+  - Best for: medical research, biology, health sciences, scientific papers
+  - Website: https://pubmed.ncbi.nlm.nih.gov
+
+- **crossref**
+  - Description: Scholarly content metadata database
+  - Best for: academic papers, research metadata, citations
+  - Website: https://www.crossref.org
+
+- **openalex**
+  - Description: Open catalog of scholarly research
+  - Best for: research papers, academic metadata, scholarly content
+  - Website: https://openalex.org
+
+## PROGRAMMING
+
+- **github**
+  - Description: Code hosting platform with millions of repositories
+  - Best for: code search, open source, repositories, programming examples
+  - Website: https://github.com
+
+- **gitlab**
+  - Description: DevOps platform with code hosting
+  - Best for: code search, DevOps, alternative to GitHub
+  - Website: https://gitlab.com
+
+- **github_code**
+  - Description: Code-specific search within GitHub repositories
+  - Best for: code snippets, implementation details, programming
+  - Website: https://github.com
+
+- **stackexchange**
+  - Description: Q&A sites including Stack Overflow for programmers
+  - Best for: programming questions, troubleshooting, technical Q&A
+  - Website: https://stackexchange.com
+
+- **reddit**
+  - Description: Community discussions including r/programming, r/learnprogramming
+  - Best for: developer discussions, opinions, tutorials, community help
+  - Website: https://reddit.com
+
+- **hackernews**
+  - Description: Tech news and discussions from Y Combinator
+  - Best for: tech news, startup news, programming discussions
+  - Website: https://news.ycombinator.com
+
+- **pypi**
+  - Description: Python Package Index
+  - Best for: Python packages, pip libraries, Python code
+  - Website: https://pypi.org
+
+- **npm**
+  - Description: Node.js package registry
+  - Best for: JavaScript packages, Node.js modules, frontend code
+  - Website: https://npms.io
+
+- **crates**
+  - Description: Rust package registry
+  - Best for: Rust packages, Rust crates, Rust code
+  - Website: https://crates.io
+
+- **docker_hub**
+  - Description: Container registry for Docker images
+  - Best for: Docker images, containers, devops, infrastructure
+  - Website: https://hub.docker.com
+
+- **huggingface**
+  - Description: ML models, datasets, and demos platform
+  - Best for: ML models, AI models, datasets, transformers
+  - Website: https://huggingface.co
+
+- **sourcehut**
+  - Description: Privacy-focused code hosting for open source
+  - Best for: open source, alternative to GitHub, C development
+  - Website: https://sourcehut.org
+
+## DOCUMENTATION
+
+- **dictzone**
+  - Description: Dictionary and translation service
+  - Best for: definitions, translations, word meanings
+  - Website: https://dictzone.com
+
+- **jisho**
+  - Description: Japanese-English dictionary
+  - Best for: Japanese dictionary, kanji, Japanese learning
+  - Website: https://jisho.org
+
+- **wordnik**
+  - Description: Dictionary and word definitions
+  - Best for: word definitions, examples, etymology
+  - Website: https://www.wordnik.com
+
+## NEWS
+
+- **google_news**
+  - Description: News aggregation from multiple sources
+  - Best for: news, current events, media coverage
+  - Website: https://news.google.com
+
+- **reuters**
+  - Description: International news agency
+  - Best for: news, business news, international news
+  - Website: https://www.reuters.com
+
+## MEDIA
+
+- **youtube**
+  - Description: Video sharing platform with tutorials and content
+  - Best for: video tutorials, how-to videos, video content
+  - Website: https://www.youtube.com
+
+- **unsplash**
+  - Description: Free high-resolution stock photos
+  - Best for: stock photos, images, free images
+  - Website: https://unsplash.com
+
+- **pexels**
+  - Description: Free stock photos and videos
+  - Best for: stock photos, videos, free media
+  - Website: https://www.pexels.com
+
+- **flickr**
+  - Description: Photo sharing and hosting service
+  - Best for: photos, photography, images
+  - Website: https://www.flickr.com
+
+- **imgur**
+  - Description: Image hosting and sharing platform
+  - Best for: images, memes, quick images
+  - Website: https://imgur.com
+
+## MAPS
+
+- **openstreetmap**
+  - Description: Free editable map of the world
+  - Best for: maps, locations, geography, addresses
+  - Website: https://www.openstreetmap.org
+
+## COMPUTATIONAL
+
+- **wolframalpha_api**
+  - Description: Computational knowledge engine
+  - Best for: math, calculations, facts, data analysis
+  - Website: https://www.wolframalpha.com
+
+## TRANSLATION
+
+- **deepl**
+  - Description: AI-powered translation service
+  - Best for: translations, language translation, text translation
+  - Website: https://deepl.com
+

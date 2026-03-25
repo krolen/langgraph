@@ -28,20 +28,22 @@ class HelloState(BaseModel):
     name: str = "World"
 
 
-def hello_node(state: HelloState) -> dict:
-    """Node that generates a greeting and joke using the LLM."""
+def prepare_messages_node(state: HelloState) -> dict:
+    """Node that prepares messages for the LLM based on the name."""
     name = state.name
 
-    # Prepare messages for the LLM
     messages = [
         SystemMessage(content="You are a friendly assistant. Greet the user and tell them a short, clean joke in one sentence."),
         HumanMessage(content=f"My name is {name}. Please greet me and share a joke."),
     ]
 
-    # Call the LLM
-    response = llm.invoke(messages)
+    return {"messages": messages}
 
-    # Return the response as a new message to add to state
+
+def llm_communication_node(state: HelloState) -> dict:
+    """Node that communicates with the LLM and returns the response."""
+    messages = state.messages
+    response = llm.invoke(messages)
     return {"messages": [response]}
 
 
@@ -53,14 +55,16 @@ def create_hello_agent() -> StateGraph:
     """
     graph = StateGraph(HelloState)
 
-    # Add a single node
-    graph.add_node("greeting", hello_node)
+    # Add separate nodes for message preparation and LLM communication
+    graph.add_node("prepare_messages", prepare_messages_node)
+    graph.add_node("llm_communication", llm_communication_node)
 
     # Set entry point
-    graph.set_entry_point("greeting")
+    graph.set_entry_point("prepare_messages")
 
-    # Edge to end
-    graph.add_edge("greeting", END)
+    # Edge from prepare to LLM, then to end
+    graph.add_edge("prepare_messages", "llm_communication")
+    graph.add_edge("llm_communication", END)
 
     return graph
 
