@@ -1,0 +1,26 @@
+# --- WEB ---
+brave           -> [web]
+duckduckgo      -> [web, programming]
+  # --- FACTS ---
+wikipedia       -> [facts]
+wikidata        -> [facts]
+  # --- COMPUTE ---
+wolframalpha    -> [compute]
+  # --- PROGRAMMING ---
+github          -> [programming]
+stackexchange   -> [programming]
+  # --- DISCUSSION ---
+reddit          -> [discussion, programming]
+hackernews      -> [discussion, news]
+  # --- PACKAGES ---
+pypi            -> [packages]
+npm             -> [packages]
+crates          -> [packages]
+docker_hub      -> [packages]
+huggingface     -> [packages, ai, programming]
+  # --- SCIENCE ---
+arxiv           -> [science]
+semantic_scholar -> [science]
+  # --- NEWS ---
+reuters         -> [news]
+google_news     -> [news]

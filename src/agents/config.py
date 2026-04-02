@@ -7,6 +7,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# LLM Configuration
+LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://192.168.0.100:4444/v1")
+# local quick model
+LLM_MODEL = os.getenv("LLM_MODEL", "my-vllm/mymodel")
+# routing model going through bitfrost
+LLM_API_KEY = os.getenv("LLM_API_KEY")
+
 # SearXNG Configuration
 SEARXNG_URL = os.getenv("SEARXNG_URL", "http://192.168.0.100:8089")
 
@@ -47,6 +54,9 @@ class AgentConfig:
 
     def __init__(self):
         """Initialize configuration from environment."""
+        self.llm_base_url = LLM_BASE_URL
+        self.llm_model = LLM_MODEL
+        self.llm_api_key = LLM_API_KEY
         self.searxng_url = SEARXNG_URL
         self.aegra_url = AEGRA_URL
         self.aegra_api_key = AEGRA_API_KEY

@@ -1,4 +1,4 @@
-# SearXNG Settings for Web Search Agent
+se# SearXNG Settings for Web Search Agent
 # This configuration enables JSON format and optimizes for API usage
 
 use_default_settings: true

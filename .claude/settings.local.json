@@ -22,7 +22,14 @@
       "Bash(sed \"s/\"\"name\"\": \"\"//;s/\"\"$//\")",
       "Read(//tmp/**)",
       "Bash(cat:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "mcp__idea__read_file",
+      "mcp__idea__create_new_file",
+      "mcp__idea__get_file_text_by_path",
+      "mcp__idea__replace_text_in_file",
+      "Bash(uv add:*)",
+      "Bash(uv pip:*)",
+      "mcp__c4ai__md"
     ]
   },
   "hooks": {

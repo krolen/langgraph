@@ -11,19 +11,13 @@ from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 import openlit
 
-# LLM configuration
-LLM_BASE_URL = "http://192.168.0.100:4444/v1"
-LLM_MODEL = "my-vllm/mymodel"
-LLM_API_KEY = "sk-bf-db373190-3492-4d62-9ad1-f10200f0928f"
-
-# SearXNG Configuration
-SEARXNG_URL = "http://192.168.0.100:8089"
+from agents.config import config
 
 # Initialize the LLM client
 llm = ChatOpenAI(
-    base_url=LLM_BASE_URL,
-    model=LLM_MODEL,
-    api_key=LLM_API_KEY,
+    base_url=config.llm_base_url,
+    model=config.llm_model,
+    api_key=config.llm_api_key,
 )
 
 # Recommended SearXNG engines from searxng_recommended_engines.yaml
@@ -132,7 +126,8 @@ def prepare_search_node(state: SearXNGSearchState) -> dict:
     current_date = datetime.now().strftime("%Y-%m-%d")
 
     # Create system prompt for query rephrasing
-    system_prompt = """You are a search query rephrasing assistant. Your task is to rephrase user search queries to make them more effective for web search engines.
+    system_prompt = """You are a search query rephrasing assistant. 
+    Your task is to rephrase user search queries to make them more effective for web search engines.
 
 Available search categories: {categories}
 

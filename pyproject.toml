@@ -17,6 +17,7 @@ dependencies = [
     "fastapi>=0.115.2",
     "uvicorn>=0.23.1",
     "openlit>=1.38.1",
+    "crawl4ai==0.8.5",
 ]
 
 [project.optional-dependencies]
