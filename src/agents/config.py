@@ -17,6 +17,9 @@ LLM_API_KEY = os.getenv("LLM_API_KEY")
 # SearXNG Configuration
 SEARXNG_URL = os.getenv("SEARXNG_URL", "http://192.168.0.100:8089")
 
+# MCP Server Configuration
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://192.168.0.100:7000/mcp")
+
 # AEGRA Configuration
 AEGRA_URL = os.getenv("AEGRA_URL", "http://192.168.0.100:2026")
 
@@ -58,6 +61,7 @@ class AgentConfig:
         self.llm_model = LLM_MODEL
         self.llm_api_key = LLM_API_KEY
         self.searxng_url = SEARXNG_URL
+        self.mcp_server_url = MCP_SERVER_URL
         self.aegra_url = AEGRA_URL
         self.aegra_api_key = AEGRA_API_KEY
         self.app_host = APP_HOST
