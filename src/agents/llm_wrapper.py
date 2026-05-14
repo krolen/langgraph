@@ -1,15 +1,16 @@
 """LLM Wrapper for creating ChatOpenAI instances with custom headers."""
 
 from langchain_openai import ChatOpenAI
+
 from src.agents.config import config
 
 
 def create_chat_openai(
-    base_url: str = None,
-    model: str = None,
-    api_key: str = None,
-    default_headers: dict = None,
-    **kwargs
+        base_url: str = None,
+        model: str = None,
+        api_key: str = None,
+        default_headers: dict = None,
+        **kwargs
 ) -> ChatOpenAI:
     """
     Create a ChatOpenAI instance with optional custom headers.
@@ -40,12 +41,12 @@ router_llm = create_chat_openai(
 
 # Local LLM instance - for local processing, may go to different backend
 router_llm_local = create_chat_openai(
-    default_headers={"X-My-Route": "local"}
+    default_headers={"X-My-Route": "local-fallback"}
 )
 
 # Local LLM instance - for local processing, may go to different backend
 llm_local = create_chat_openai(
-    base_url= "http://192.168.0.188:8888/v1",
-    model="lmy-vllm/mymodel",
+    base_url="http://192.168.0.188:8888/v1",
+    model="krolen/mymodel",
     api_key="my-key"
 )

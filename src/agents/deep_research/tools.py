@@ -1,7 +1,10 @@
+from typing import List
+
 import httpx
-from typing import List, Annotated
 from langchain.tools import tool
+
 from src.agents.config import config
+
 
 # Note: In a production MCP environment, this would use an MCP Client.
 # For this implementation, we assume the MCP server is accessible via an API 
@@ -9,6 +12,7 @@ from src.agents.config import config
 
 class MCPClient:
     """Client to communicate with the my-nas-mcp server."""
+
     def __init__(self, base_url: str = None):
         self.base_url = base_url or config.mcp_server_url
 
@@ -23,7 +27,9 @@ class MCPClient:
             response.raise_for_status()
             return response.json()
 
+
 mcp_client = MCPClient()
+
 
 @tool
 async def web_search(query: str) -> str:
@@ -37,6 +43,7 @@ async def web_search(query: str) -> str:
     except Exception as e:
         return f"Error performing web search: {str(e)}"
 
+
 @tool
 async def web_crawl_url(url: str) -> str:
     """
@@ -49,6 +56,7 @@ async def web_crawl_url(url: str) -> str:
     except Exception as e:
         return f"Error crawling URL {url}: {str(e)}"
 
+
 @tool
 async def web_crawl_multiple_urls(urls: List[str]) -> str:
     """
@@ -60,6 +68,7 @@ async def web_crawl_multiple_urls(urls: List[str]) -> str:
         return str(result)
     except Exception as e:
         return f"Error crawling multiple URLs: {str(e)}"
+
 
 # List of available tools for the agent
 RESEARCH_TOOLS = [web_search, web_crawl_url, web_crawl_multiple_urls]

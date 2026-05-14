@@ -11,8 +11,9 @@ Registration workflow:
 3. Create runs to execute the agent
 """
 
-import httpx
 from typing import Optional
+
+import httpx
 
 from src.agents.config import config
 
@@ -40,14 +41,14 @@ class AegraRegistrar:
     """
 
     def __init__(
-        self,
-        aegra_url: str,
-        graph_id: str,
-        assistant_name: Optional[str] = None,
-        assistant_version: str = "0.1.0",
-        assistant_description: Optional[str] = None,
-        endpoint_url: Optional[str] = None,
-        api_key: Optional[str] = None,
+            self,
+            aegra_url: str,
+            graph_id: str,
+            assistant_name: Optional[str] = None,
+            assistant_version: str = "0.1.0",
+            assistant_description: Optional[str] = None,
+            endpoint_url: Optional[str] = None,
+            api_key: Optional[str] = None,
     ):
         """Initialize the AEGRA registrar.
 
@@ -262,10 +263,10 @@ class AegraRegistrar:
 
 
 def register_hello_agent_with_aegra(
-    aegra_url: str = config.aegra_url,
-    graph_id: str = "hello-world-agent",
-    agent_endpoint: str = "http://192.168.0.188:8000",
-    api_key: Optional[str] = None,
+        aegra_url: str = config.aegra_url,
+        graph_id: str = "hello-world-agent",
+        agent_endpoint: str = "http://192.168.0.188:8000",
+        api_key: Optional[str] = None,
 ) -> dict:
     """Register the hello world agent with AEGRA.
 

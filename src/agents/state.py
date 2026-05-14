@@ -1,9 +1,5 @@
 """LangGraph state definition for the web search agent."""
 
-from collections.abc import Sequence
-from typing import Annotated
-
-import operator
 from pydantic import BaseModel, Field
 
 

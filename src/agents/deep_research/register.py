@@ -1,20 +1,22 @@
 import os
-from src.agents.register_with_aegra import AegraRegistrar
+
 from src.agents.config import config
+from src.agents.register_with_aegra import AegraRegistrar
+
 
 def register_deep_research_agent():
     """
     Register the Deep Research Agent with the AEGRA platform.
     """
     api_key = os.getenv("AEGRA_API_KEY")
-    
+
     registrar = AegraRegistrar(
         aegra_url=config.aegra_url,
         graph_id="deep-research-agent",
         assistant_name="Deep Research Agent",
         assistant_version="0.1.0",
         assistant_description="An advanced research agent that iteratively searches and crawls the web to provide comprehensive reports.",
-        endpoint_url="http://192.168.0.188:8002", # Adjusted port for this agent
+        endpoint_url="http://192.168.0.188:8002",  # Adjusted port for this agent
         api_key=api_key,
     )
 
@@ -25,6 +27,7 @@ def register_deep_research_agent():
         print(f"Assistant ID: {registrar.assistant_id}")
     except Exception as e:
         print(f"Registration failed: {e}")
+
 
 if __name__ == "__main__":
     register_deep_research_agent()

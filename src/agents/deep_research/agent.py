@@ -1,11 +1,14 @@
 from typing import Any, Dict
+
 from src.agents.deep_research.graph import create_compiled_research_agent
 from src.agents.deep_research.state import ResearchState
+
 
 class DeepResearchAgent:
     """
     Wrapper class for the Deep Research Agent to provide a clean entry point.
     """
+
     def __init__(self):
         self.agent = create_compiled_research_agent()
 
@@ -27,9 +30,10 @@ class DeepResearchAgent:
             "final_report": "",
             "iteration_count": 0
         }
-        
+
         result = await self.agent.ainvoke(initial_state)
         return result
+
 
 def create_research_agent():
     """

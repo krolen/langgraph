@@ -1,7 +1,6 @@
 """AEGRA deployment configuration for the web search agent."""
 
 import os
-from functools import partial
 
 from dotenv import load_dotenv
 
@@ -10,7 +9,7 @@ load_dotenv()
 # LLM Configuration
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://192.168.0.100:4444/v1")
 # local quick model
-LLM_MODEL = os.getenv("LLM_MODEL", "my-vllm/mymodel")
+LLM_MODEL = os.getenv("LLM_MODEL", "krolen/mymodel")
 # routing model going through bitfrost
 LLM_API_KEY = os.getenv("LLM_API_KEY")
 
