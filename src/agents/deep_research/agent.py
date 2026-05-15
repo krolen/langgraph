@@ -1,16 +1,16 @@
 from typing import Any, Dict
 
-from src.agents.deep_research.graph import create_compiled_research_agent
+from src.agents.deep_research.graph import graph
 from src.agents.deep_research.state import ResearchState
 
 
-class DeepResearchAgent:
+class DeepResearchAgentRunner:
     """
     Wrapper class for the Deep Research Agent to provide a clean entry point.
     """
 
     def __init__(self):
-        self.agent = create_compiled_research_agent()
+        self.agent = graph
 
     async def run(self, query: str) -> Dict[str, Any]:
         """
@@ -27,16 +27,15 @@ class DeepResearchAgent:
             "discovered_urls": [],
             "knowledge_base": {},
             "research_plan": [],
-            "final_report": "",
+            "final_report": None,
             "iteration_count": 0
         }
 
         result = await self.agent.ainvoke(initial_state)
         return result
 
-
-def create_research_agent():
+def create_research_agent_runner():
     """
-    Factory function to create a DeepResearchAgent instance.
+    Factory function to create a DeepResearchAgentRunner instance.
     """
-    return DeepResearchAgent()
+    return DeepResearchAgentRunner()

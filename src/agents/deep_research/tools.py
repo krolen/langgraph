@@ -1,33 +1,55 @@
-from typing import List
+from contextlib import AsyncExitStack
+from typing import List, Optional
 
-import httpx
 from langchain.tools import tool
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
 
 from src.agents.config import config
 
 
-# Note: In a production MCP environment, this would use an MCP Client.
-# For this implementation, we assume the MCP server is accessible via an API 
-# or provided by the Aegra runtime.
-
 class MCPClient:
-    """Client to communicate with the my-nas-mcp server."""
+    """Client to communicate with the my-nas-mcp server using MCP protocol."""
 
-    def __init__(self, base_url: str = None):
-        self.base_url = base_url or config.mcp_server_url
+    def __init__(self, server_url: str = None):
+        self.server_url = server_url or config.mcp_server_url
+        self.session: Optional[ClientSession] = None
+        self.exit_stack: AsyncExitStack = AsyncExitStack()
+
+    async def connect(self):
+        """Connect to the MCP server."""
+        # Parse the URL to determine transport type
+        if self.server_url.startswith("http"):
+            # Use streamable HTTP transport for MCP over HTTP
+            # streamablehttp_client returns (read_stream, write_stream, get_session_id)
+            read_stream, write_stream, _ = await self.exit_stack.enter_async_context(
+                streamablehttp_client(self.server_url)
+            )
+        else:
+            # Fallback to stdio for local processes (not expected here)
+            raise ValueError(f"Unsupported server URL: {self.server_url}")
+
+        self.session = await self.exit_stack.enter_async_context(
+            ClientSession(read_stream, write_stream)
+        )
+
+        # Initialize the connection
+        await self.session.initialize()
 
     async def call_tool(self, tool_name: str, arguments: dict):
         """Call a specific MCP tool."""
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.base_url}/tools/call",
-                json={"tool_name": tool_name, "arguments": arguments},
-                timeout=30.0
-            )
-            response.raise_for_status()
-            return response.json()
+        if not self.session:
+            await self.connect()
+
+        result = await self.session.call_tool(tool_name, arguments)
+        return result
+
+    async def cleanup(self):
+        """Clean up resources."""
+        await self.exit_stack.aclose()
 
 
+# Global MCP client instance
 mcp_client = MCPClient()
 
 
@@ -39,6 +61,9 @@ async def web_search(query: str) -> str:
     """
     try:
         result = await mcp_client.call_tool("web_search", {"query": query})
+        # Extract text content from MCP result
+        if hasattr(result, 'content'):
+            return str(result.content)
         return str(result)
     except Exception as e:
         return f"Error performing web search: {str(e)}"
@@ -52,6 +77,9 @@ async def web_crawl_url(url: str) -> str:
     """
     try:
         result = await mcp_client.call_tool("web_crawl_url", {"url": url})
+        # Extract text content from MCP result
+        if hasattr(result, 'content'):
+            return str(result.content)
         return str(result)
     except Exception as e:
         return f"Error crawling URL {url}: {str(e)}"
@@ -65,6 +93,9 @@ async def web_crawl_multiple_urls(urls: List[str]) -> str:
     """
     try:
         result = await mcp_client.call_tool("web_crawl_multiple_urls", {"urls": urls})
+        # Extract text content from MCP result
+        if hasattr(result, 'content'):
+            return str(result.content)
         return str(result)
     except Exception as e:
         return f"Error crawling multiple URLs: {str(e)}"

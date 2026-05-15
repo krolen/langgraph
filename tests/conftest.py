@@ -1,6 +1,4 @@
-import pytest
 import logging
-import os
 from pathlib import Path
 
 def pytest_configure(config):

@@ -16,7 +16,6 @@ def register_deep_research_agent():
         assistant_name="Deep Research Agent",
         assistant_version="0.1.0",
         assistant_description="An advanced research agent that iteratively searches and crawls the web to provide comprehensive reports.",
-        endpoint_url="http://192.168.0.188:8002",  # Adjusted port for this agent
         api_key=api_key,
     )
 

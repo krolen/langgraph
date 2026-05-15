@@ -1,5 +1,7 @@
 import pytest
+
 from src.agents.deep_research.agent import create_research_agent
+
 
 @pytest.fixture
 def research_agent():

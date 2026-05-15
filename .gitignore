@@ -1,3 +1,4 @@
 /uv.lock
 .env
 /.idea/
+/logs/test_run.log

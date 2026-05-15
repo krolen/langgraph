@@ -1,58 +1,46 @@
 from typing import Literal
 
 from langgraph.graph import StateGraph, END
+from langgraph.runtime import Runtime
 
+from src.agents.deep_research.context import Context
 from src.agents.deep_research.nodes import planner_node, executor_node, synthesizer_node
 from src.agents.deep_research.state import ResearchState
 
 
-def should_continue(state: ResearchState) -> Literal["planner", "end"]:
+def should_continue(state: ResearchState, runtime: Runtime[Context]) -> Literal["planner", "end"]:
     """
     Conditional edge to decide whether to continue research or end.
     """
-    # End if final report is generated
-    if state.get("final_report"):
+    if state.final_report:
         return "end"
-
-    # End if max iterations reached (max 3)
-    if state.get("iteration_count", 0) >= 3:
+    if state.iteration_count >= runtime.context.max_iterations:
         return "end"
-
-    # Otherwise, go back to planner to fill remaining gaps
     return "planner"
 
+# Define the graph using schemas for Aegra compatibility
+builder = StateGraph(ResearchState, context_schema=Context)
 
-def create_research_agent() -> StateGraph:
-    """
-    Constructs the Deep Research LangGraph.
-    """
-    workflow = StateGraph(ResearchState)
+# Add nodes
+builder.add_node("planner", planner_node)
+builder.add_node("executor", executor_node)
+builder.add_node("synthesizer", synthesizer_node)
 
-    # Add nodes
-    workflow.add_node("planner", planner_node)
-    workflow.add_node("executor", executor_node)
-    workflow.add_node("synthesizer", synthesizer_node)
+# Define edges
+builder.set_entry_point("planner")
+builder.add_edge("planner", "executor")
+builder.add_edge("executor", "synthesizer")
 
-    # Define edges
-    workflow.set_entry_point("planner")
+builder.add_conditional_edges(
+    "synthesizer",
+    should_continue,
+    {
+        "planner": "planner",
+        "end": END
+    }
+)
 
-    workflow.add_edge("planner", "executor")
-    workflow.add_edge("executor", "synthesizer")
-
-    workflow.add_conditional_edges(
-        "synthesizer",
-        should_continue,
-        {
-            "planner": "planner",
-            "end": END
-        }
-    )
-
-    return workflow
-
+graph = builder.compile(name="Deep Research Agent")
 
 def create_compiled_research_agent():
-    """
-    Creates a compiled version of the research agent.
-    """
-    return create_research_agent().compile()
+    return graph

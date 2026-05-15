@@ -1,25 +1,20 @@
 import operator
-from typing import TypedDict, List, Annotated
+from dataclasses import dataclass, field
+from typing import List, Annotated
+
+from src.agents.base import BaseAgentState
 
 
-class ResearchState(TypedDict):
+@dataclass
+class ResearchState(BaseAgentState):
     """State for the Deep Research Agent."""
 
-    # The original research goal
-    query: str
-
     # List of URLs discovered during the search process
-    discovered_urls: Annotated[List[str], operator.add]
+    discovered_urls: Annotated[List[str], operator.add] = field(default_factory=list)
 
     # Collection of extracted content and summaries from crawled pages
     # Mapping of URL -> Content/Summary
-    knowledge_base: Annotated[dict, operator.ior]
+    knowledge_base: Annotated[dict, operator.ior] = field(default_factory=dict)
 
     # Current set of questions or information gaps that need to be addressed
-    research_plan: List[str]
-
-    # The final synthesized research report
-    final_report: str
-
-    # Current iteration count to prevent infinite loops (max 3)
-    iteration_count: int
+    research_plan: List[str] = field(default_factory=list)
