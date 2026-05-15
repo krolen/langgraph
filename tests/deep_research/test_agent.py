@@ -1,12 +1,12 @@
 import pytest
 
-from src.agents.deep_research.agent import create_research_agent
+from src.agents.deep_research.agent import create_research_agent_runner
 
 
 @pytest.fixture
 def research_agent():
     """Fixture to provide a fresh research agent for each test."""
-    return create_research_agent()
+    return create_research_agent_runner()
 
 @pytest.mark.asyncio
 async def test_deep_research_agent_execution(research_agent):

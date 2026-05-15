@@ -1,34 +1,33 @@
 """Configurable parameters for the Deep Research Agent."""
 import os
-from dataclasses import dataclass, field
 from typing import Annotated
+from pydantic import BaseModel, Field
 
-
-@dataclass(kw_only=True)
-class Context:
+class Context(BaseModel):
     """The context for the research agent."""
     
-    model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default="openai/gpt-4o",
-        metadata={"description": "The LLM model to use for planning and synthesis."}
+    model: str = Field(
+        default="krolen/mymodel",
+        description="The LLM model to use for planning and synthesis."
     )
     
-    max_iterations: int = field(
+    max_iterations: int = Field(
         default=3,
-        metadata={"description": "Maximum number of research iterations before finishing."}
+        description="Maximum number of research iterations before finishing."
     )
     
-    system_prompt_planner: str = field(
+    system_prompt_planner: str = Field(
         default="You are a precise research planner. Output only valid JSON lists of strings.",
-        metadata={"description": "System prompt for the planner node."}
+        description="System prompt for the planner node."
     )
     
-    system_prompt_synthesizer: str = field(
+    system_prompt_synthesizer: str = Field(
         default="You are a professional research synthesizer.",
-        metadata={"description": "System prompt for the synthesizer node."}
+        description="System prompt for the synthesizer node."
     )
 
-    def __post_init__(self) -> None:
+    def __init__(self, **data):
+        super().__init__(**data)
         # Allow environment variables to override defaults
         self.model = os.environ.get("RESEARCH_MODEL", self.model)
         self.max_iterations = int(os.environ.get("RESEARCH_MAX_ITERATIONS", str(self.max_iterations)))

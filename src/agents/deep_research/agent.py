@@ -1,6 +1,8 @@
 from typing import Any, Dict
 
+from dataclasses import asdict
 from src.agents.deep_research.graph import graph
+from src.agents.deep_research.context import Context
 from src.agents.deep_research.state import ResearchState
 
 
@@ -31,7 +33,7 @@ class DeepResearchAgentRunner:
             "iteration_count": 0
         }
 
-        result = await self.agent.ainvoke(initial_state)
+        result = await self.agent.ainvoke(initial_state, config={"configurable": Context().model_dump()})
         return result
 
 def create_research_agent_runner():

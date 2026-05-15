@@ -1,6 +1,6 @@
 import operator
 from dataclasses import dataclass, field
-from typing import List, Annotated
+from typing import List, Annotated, Dict
 
 from src.agents.base import BaseAgentState
 
@@ -15,6 +15,12 @@ class ResearchState(BaseAgentState):
     # Collection of extracted content and summaries from crawled pages
     # Mapping of URL -> Content/Summary
     knowledge_base: Annotated[dict, operator.ior] = field(default_factory=dict)
+
+    # Raw content from crawled pages before extraction
+    raw_crawl_results: Dict[str, str] = field(default_factory=dict)
+
+    # URLs selected by the model for crawling
+    selected_urls: List[str] = field(default_factory=list)
 
     # Current set of questions or information gaps that need to be addressed
     research_plan: List[str] = field(default_factory=list)

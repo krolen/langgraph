@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from langchain.tools import tool
 from mcp import ClientSession
-from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.streamable_http import streamable_http_client
 
 from src.agents.config import config
 
@@ -23,7 +23,7 @@ class MCPClient:
             # Use streamable HTTP transport for MCP over HTTP
             # streamablehttp_client returns (read_stream, write_stream, get_session_id)
             read_stream, write_stream, _ = await self.exit_stack.enter_async_context(
-                streamablehttp_client(self.server_url)
+                streamable_http_client(self.server_url)
             )
         else:
             # Fallback to stdio for local processes (not expected here)
