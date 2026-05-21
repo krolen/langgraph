@@ -8,7 +8,7 @@ def register_deep_research_agent():
     """
     Register the Deep Research Agent with the AEGRA platform.
     """
-    api_key = os.getenv("AEGRA_API_KEY")
+    api_key = os.getenv("AEGRA_API_KEY", "my-key")
 
     registrar = AegraRegistrar(
         aegra_url=config.aegra_url,

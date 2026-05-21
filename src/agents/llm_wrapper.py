@@ -1,5 +1,5 @@
 """LLM Wrapper for creating ChatOpenAI instances with custom headers."""
-
+from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 import asyncio
 from typing import Any, Optional
@@ -24,7 +24,7 @@ concurrency_manager = ModelConcurrencyManager()
 
 class ConcurrencyLimitedLLM:
     """Wrapper for LLM to limit the number of concurrent requests."""
-    def __init__(self, llm: Any, semaphore: asyncio.Semaphore):
+    def __init__(self, llm: BaseChatModel, semaphore: asyncio.Semaphore):
         self.llm = llm
         self.semaphore = semaphore
 

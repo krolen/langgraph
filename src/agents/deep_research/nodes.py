@@ -1,17 +1,17 @@
 import logging
 import re
 import asyncio
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import BaseTool
+from langchain_core.language_models import BaseChatModel
 from langgraph.runtime import Runtime
 from pydantic import BaseModel, Field
 
 from src.agents.deep_research.context import Context
 from src.agents.deep_research.state import ResearchState
-from src.agents.deep_research.tools import web_search, web_crawl_multiple_urls
-from src.agents.llm_wrapper import create_chat_openai
+from src.agents.deep_research.tools import extract_text_from_mcp_result
 
 logger = logging.getLogger(__name__)
 
@@ -27,21 +27,34 @@ class ExtractionOutput(BaseModel):
     """The output of the information extraction process."""
     extracted_info: str = Field(description="The relevant information extracted from the page content.")
 
-async def planner_node(state: ResearchState, config: RunnableConfig) -> Dict[str, Any]:
+def _get_field(state: Any, field_name: str, default: Any = None) -> Any:
+    """Helper to get field from state whether it is a dict or a dataclass."""
+    if isinstance(state, dict):
+        return state.get(field_name, default)
+    return getattr(state, field_name, default)
+
+def _get_context(runtime: Union[Runtime[Context], Any]) -> Context:
+    """Helper to extract Context from runtime, handling both real and mock/fallback scenarios."""
+    if hasattr(runtime, "context") and runtime.context:
+        return runtime.context
+    # Fallback for mock environments where context might be nested differently
+    if hasattr(runtime, "execution_runtime") and hasattr(runtime.execution_runtime, "context"):
+        return runtime.execution_runtime.context
+    return Context()
+
+async def planner_node(state: ResearchState, runtime: Runtime[Context], model: BaseChatModel) -> Dict[str, Any]:
     """
     Analyzes the current knowledge base and the original query to identify
     information gaps and generate new search queries.
     """
-    query = state.query
-    knowledge = state.knowledge_base
+    query = _get_field(state, "query")
+    knowledge = _get_field(state, "knowledge_base")
+    ctx = _get_context(runtime)
 
     logger.info(f"Planning research for query: {query}")
     
-    configurable = config.get("configurable", {})
-    model = configurable.get("model", "openai/gpt-4o")
-    system_prompt_planner = configurable.get("system_prompt_planner", "You are a precise research planner. Output only valid JSON lists of strings.")
-
-    llm = create_chat_openai(model=model).with_structured_output(PlannerOutput)
+    system_prompt_planner = ctx.system_prompt_planner
+    llm = model.with_structured_output(PlannerOutput)
 
     prompt = f"""
     You are a research planner. Your goal is to provide a comprehensive answer to the research query.
@@ -72,16 +85,20 @@ async def planner_node(state: ResearchState, config: RunnableConfig) -> Dict[str
 
     return {
         "research_plan": queries,
-        "iteration_count": state.iteration_count + 1
+        "iteration_count": _get_field(state, "iteration_count", 0) + 1
     }
 
-async def search_node(state: ResearchState, config: RunnableConfig) -> Dict[str, Any]:
+async def search_node(state: ResearchState, runtime: Runtime[Context], model: BaseChatModel, web_search: BaseTool) -> Dict[str, Any]:
     """
     Executes search queries and lets the LLM select the most relevant URLs.
     """
-    queries = state.research_plan
+    queries = _get_field(state, "research_plan", [])
     if not queries:
         logger.info("No queries to execute.")
+        return {"selected_urls": []}
+
+    if not web_search:
+        logger.error("web_search tool not available")
         return {"selected_urls": []}
 
     logger.info(f"Executing {len(queries)} search queries")
@@ -90,31 +107,28 @@ async def search_node(state: ResearchState, config: RunnableConfig) -> Dict[str,
 
     for q in queries:
         logger.debug(f"Performing search for: {q}")
-        search_res = await web_search.ainvoke({"query": q})
-        if isinstance(search_res, str) and search_res.startswith("Error"):
-            logger.warning(f"Search for '{q}' failed: {search_res}")
-            continue
-        
-        search_results_text.append(f"Query: {q}\nResult: {search_res}")
-        urls = re.findall(r'https?://[^\s"<>]+', search_res)
-        all_found_urls.extend(urls)
+        try:
+            search_res = await web_search.ainvoke({"query": q})
+            search_res_text = extract_text_from_mcp_result(search_res)
+            
+            search_results_text.append(f"Query: {q}\nResult: {search_res_text}")
+            urls = re.findall(r'https?://[^\s"<>]+', search_res_text)
+            all_found_urls.extend(urls)
+        except Exception as e:
+            logger.warning(f"Search for '{q}' failed: {e}")
 
     if not all_found_urls:
         logger.warning("No URLs found in search results.")
         return {"selected_urls": []}
 
-    # Deduplicate
     unique_urls = list(set(all_found_urls))
     
-    # Ask model to choose top 10
-    configurable = config.get("configurable", {})
-    model_name = configurable.get("model", "openai/gpt-4o")
-    llm = create_chat_openai(model=model_name).with_structured_output(URLSelectionOutput)
+    llm = model.with_structured_output(URLSelectionOutput)
 
     prompt = f"""
     You are a research assistant. Given the original query and the search results, select the top 10 most relevant URLs to crawl to find the most useful information.
     
-    Original Query: {state.query}
+    Original Query: {_get_field(state, "query")}
     
     Search Results:
     {chr(10).join(search_results_text)}
@@ -133,81 +147,54 @@ async def search_node(state: ResearchState, config: RunnableConfig) -> Dict[str,
     logger.info(f"Selected {len(selected_urls)} URLs for crawling.")
     return {"selected_urls": selected_urls}
 
-async def crawl_node(state: ResearchState, config: RunnableConfig) -> Dict[str, Any]:
+async def crawl_node(state: ResearchState, runtime: Runtime[Context], web_crawl_url: BaseTool) -> Dict[str, Any]:
     """
     Crawls the selected URLs and stores raw content.
     """
-    # We need selected_urls from the state or the previous node output
-    # Since we are using StateGraph, we need to make sure selected_urls is in state or passed
-    # Wait, I didn't add selected_urls to ResearchState. I should.
-    # But for now, I'll check if it's in state.
-    
-    # Let's assume I'll update state.py to include selected_urls.
-    selected_urls = getattr(state, "selected_urls", []) 
-    # Actually ResearchState is a dataclass, but in LangGraph it's often passed as a dict
-    if isinstance(state, dict):
-        selected_urls = state.get("selected_urls", [])
-    else:
-        selected_urls = getattr(state, "selected_urls", [])
+    selected_urls = _get_field(state, "selected_urls", [])
 
     if not selected_urls:
         logger.info("No URLs to crawl.")
         return {"raw_crawl_results": {}}
 
+    if not web_crawl_url:
+        logger.error("web_crawl_url tool not available")
+        return {"raw_crawl_results": {}}
+
     logger.info(f"Crawling {len(selected_urls)} URLs")
     
-    # Using web_crawl_multiple_urls for efficiency
-    try:
-        crawl_res = await web_crawl_multiple_urls.ainvoke({"urls": selected_urls})
-        # The current web_crawl_multiple_urls returns a string (likely a combined markdown)
-        # To get per-URL results, we might need to call web_crawl_url in parallel.
-        # Let's check tool definition: web_crawl_multiple_urls(urls: List[str]) -> str
-        # If it returns a combined string, we can't easily map it back.
-        # Let's switch to parallel individual calls for better control.
-        
-        from src.agents.deep_research.tools import web_crawl_url
-        
-        async def crawl_one(url):
-            try:
-                res = await web_crawl_url.ainvoke({"url": url})
-                return url, res
-            except Exception as e:
-                logger.error(f"Error crawling {url}: {e}")
-                return url, f"Error: {e}"
+    async def crawl_one(url):
+        try:
+            res = await web_crawl_url.ainvoke({"url": url})
+            res_text = extract_text_from_mcp_result(res)
+            return url, res_text
+        except Exception as e:
+            logger.error(f"Error crawling {url}: {e}")
+            return url, f"Error: {e}"
 
-        results = await asyncio.gather(*(crawl_one(url) for url in selected_urls))
-        raw_crawl_results = {url: content for url, content in results}
-        
-    except Exception as e:
-        logger.error(f"Crawl process failed: {e}")
-        raw_crawl_results = {}
+    results = await asyncio.gather(*(crawl_one(url) for url in selected_urls))
+    raw_crawl_results = {url: content for url, content in results}
 
     return {"raw_crawl_results": raw_crawl_results}
 
-async def extraction_node(state: ResearchState, config: RunnableConfig) -> Dict[str, Any]:
+async def extraction_node(state: ResearchState, runtime: Runtime[Context], model: BaseChatModel) -> Dict[str, Any]:
     """
     Extracts relevant information from each crawled page.
     """
-    raw_results = getattr(state, "raw_crawl_results", {})
-    if isinstance(state, dict):
-        raw_results = state.get("raw_crawl_results", {})
+    raw_results = _get_field(state, "raw_crawl_results", {})
         
     if not raw_results:
         logger.info("No raw crawl results to extract from.")
         return {"knowledge_base": {}}
 
-    configurable = config.get("configurable", {})
-    model_name = configurable.get("model", "openai/gpt-4o")
-    llm = create_chat_openai(model=model_name).with_structured_output(ExtractionOutput)
-
+    llm = model.with_structured_output(ExtractionOutput)
     knowledge_base = {}
     
-    # Process pages in parallel
     async def extract_one(url, content):
         prompt = f"""
         You are an expert information extractor. Extract all information from the following page content that is relevant to the research query.
         
-        Research Query: {state.query if isinstance(state, dict) else state.query}
+        Research Query: {_get_field(state, "query")}
         
         Page URL: {url}
         Page Content:
@@ -216,15 +203,12 @@ async def extraction_node(state: ResearchState, config: RunnableConfig) -> Dict[
         Extract only the facts and details that directly help answer the query. Be concise but comprehensive.
         """
         try:
-            # ainvoke is wrapped by ConcurrencyLimitedLLM
             res = await llm.ainvoke([HumanMessage(content=prompt)])
             return url, res.extracted_info
         except Exception as e:
             logger.error(f"Extraction failed for {url}: {e}")
             return url, f"Error extracting info: {e}"
 
-    # To avoid overwhelming the provider even with the semaphore, we can process in smaller batches
-    # or just rely on the semaphore. Given the 504s and 400s, let's use a smaller batch size.
     batch_size = 2
     all_results = []
     items = list(raw_results.items())
@@ -238,31 +222,24 @@ async def extraction_node(state: ResearchState, config: RunnableConfig) -> Dict[
     logger.info(f"Extracted information from {len(knowledge_base)} pages.")
     return {"knowledge_base": knowledge_base}
 
-async def synthesizer_node(state: ResearchState, config: RunnableConfig) -> Dict[str, Any]:
+async def synthesizer_node(state: ResearchState, runtime: Runtime[Context], model: BaseChatModel) -> Dict[str, Any]:
     """
     Processes the knowledge base to determine if the research is complete
     and generates the final report if so.
     """
-    query = state.query if isinstance(state, dict) else state.query
-    knowledge = state.knowledge_base if isinstance(state, dict) else state.knowledge_base
+    query = _get_field(state, "query")
+    knowledge = _get_field(state, "knowledge_base")
+    ctx = _get_context(runtime)
 
     logger.info("Synthesizing results...")
     
-    # Limit knowledge size to avoid 400/504 errors from provider
-    # Simple truncation: limit total characters
     max_knowledge_chars = 30000
     knowledge_str = str(knowledge)
     if len(knowledge_str) > max_knowledge_chars:
         logger.warning(f"Knowledge base too large ({len(knowledge_str)} chars), truncating to {max_knowledge_chars}")
         knowledge_str = knowledge_str[:max_knowledge_chars] + "... [truncated]"
-    else:
-        knowledge_str = knowledge_str
 
-    configurable = config.get("configurable", {})
-    model = configurable.get("model", "openai/gpt-4o")
-    system_prompt_synthesizer = configurable.get("system_prompt_synthesizer", "You are a professional research synthesizer.")
-
-    llm = create_chat_openai(model=model)
+    system_prompt_synthesizer = ctx.system_prompt_synthesizer
 
     prompt = f"""
     You are a research synthesizer. Based on the gathered knowledge, provide a detailed answer to the query.
@@ -284,16 +261,14 @@ async def synthesizer_node(state: ResearchState, config: RunnableConfig) -> Dict
         HumanMessage(content=prompt)
     ]
 
-    # Simple retry loop for synthesis
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            response = await llm.ainvoke(messages)
+            response = await model.ainvoke(messages)
             break
         except Exception as e:
             if attempt == max_retries - 1:
                 logger.error(f"Synthesizer failed after {max_retries} attempts: {e}")
-                # Fallback: return a report stating the error
                 return {
                     "final_report": f"Error during synthesis: {str(e)}",
                     "research_plan": []

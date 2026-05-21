@@ -1,0 +1,3 @@
+# pyproject.toml versioning
+In pyproject.toml, always use exact versions (e.g., 'package==1.2.3') and always aim to use the latest available versions. Avoid range operators like >= or >.
+
