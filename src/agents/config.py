@@ -11,7 +11,7 @@ LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://192.168.0.100:4444/v1")
 # local quick model
 LLM_MODEL = os.getenv("LLM_MODEL", "krolen/mymodel")
 # routing model going through bitfrost
-LLM_API_KEY = os.getenv("LLM_API_KEY")
+LLM_API_KEY = os.getenv("LLM_API_KEY", "my-key")
 
 # SearXNG Configuration
 SEARXNG_URL = os.getenv("SEARXNG_URL", "http://192.168.0.100:8089")
@@ -23,32 +23,7 @@ MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://192.168.0.100:7000/mcp")
 AEGRA_URL = os.getenv("AEGRA_URL", "http://192.168.0.100:2026")
 
 # AEGRA API Key (optional)
-AEGRA_API_KEY = os.getenv("AEGRA_API_KEY", None)
-
-# Application Configuration
-APP_HOST = os.getenv("APP_HOST", "0.0.0.0")
-APP_PORT = int(os.getenv("APP_PORT", "8000"))
-DEBUG = os.getenv("DEBUG", "false").lower() == "true"
-
-# PostgreSQL for checkpoint persistence
-POSTGRES_URL = os.getenv("POSTGRES_URL")
-
-# Agent metadata
-AGENT_NAME = "web-search-agent"
-AGENT_VERSION = "0.1.0"
-AGENT_DESCRIPTION = "LangGraph-based web search agent using SearXNG for privacy-focused searches"
-
-# Search defaults
-DEFAULT_SEARCH_LIMIT = 10
-DEFAULT_CATEGORIES = ["general"]
-DEFAULT_SUMMARIZE = True
-
-# Timeout configurations
-SEARCH_TIMEOUT = 30.0  # seconds
-REQUEST_TIMEOUT = 60.0  # seconds
-
-# Rate limiting (requests per minute per IP)
-RATE_LIMIT_PER_MINUTE = 60
+AEGRA_API_KEY = os.getenv("AEGRA_API_KEY", "my-key")
 
 
 class AgentConfig:
@@ -63,19 +38,6 @@ class AgentConfig:
         self.mcp_server_url = MCP_SERVER_URL
         self.aegra_url = AEGRA_URL
         self.aegra_api_key = AEGRA_API_KEY
-        self.app_host = APP_HOST
-        self.app_port = APP_PORT
-        self.debug = DEBUG
-        self.postgres_url = POSTGRES_URL
-        self.agent_name = AGENT_NAME
-        self.agent_version = AGENT_VERSION
-        self.agent_description = AGENT_DESCRIPTION
-        self.default_search_limit = DEFAULT_SEARCH_LIMIT
-        self.default_categories = DEFAULT_CATEGORIES
-        self.default_summarize = DEFAULT_SUMMARIZE
-        self.search_timeout = SEARCH_TIMEOUT
-        self.request_timeout = REQUEST_TIMEOUT
-        self.rate_limit_per_minute = RATE_LIMIT_PER_MINUTE
 
     def get_checkpoint_config(self) -> dict | None:
         """Get checkpoint configuration for LangGraph persistence.

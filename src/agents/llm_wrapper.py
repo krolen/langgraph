@@ -10,6 +10,7 @@ from src.agents.config import config
 
 class ModelConcurrencyManager:
     """Manages semaphores for different models to limit parallel requests."""
+
     def __init__(self):
         self._semaphores = {}
 
@@ -20,10 +21,13 @@ class ModelConcurrencyManager:
             self._semaphores[model] = asyncio.Semaphore(limit)
         return self._semaphores[model]
 
+
 concurrency_manager = ModelConcurrencyManager()
+
 
 class ConcurrencyLimitedLLM:
     """Wrapper for LLM to limit the number of concurrent requests."""
+
     def __init__(self, llm: BaseChatModel, semaphore: asyncio.Semaphore):
         self.llm = llm
         self.semaphore = semaphore
@@ -59,7 +63,7 @@ def create_chat_openai(
         default_headers=default_headers or {},
         **kwargs
     )
-    
+
     # Wrap with concurrency limiter
     semaphore = concurrency_manager.get_semaphore(model_name)
     return ConcurrencyLimitedLLM(llm, semaphore)

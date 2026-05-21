@@ -15,6 +15,7 @@ class DeepResearchAgentRunner:
         """
         Executes the research process for a given query.
         """
+
         # Create a mock runtime for local execution
         class MockRuntime:
             def __init__(self, context):
@@ -34,9 +35,10 @@ class DeepResearchAgentRunner:
                 final_report=None,
                 iteration_count=0
             ))
-            
+
             result = await agent.ainvoke(state_dict)
             return result
+
 
 def create_research_agent_runner():
     """

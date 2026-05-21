@@ -1,5 +1,6 @@
 from typing import Any
 
+
 def extract_text_from_mcp_result(result: Any) -> str:
     """Helper to extract and join text from MCP content blocks."""
     if isinstance(result, list):

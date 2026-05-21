@@ -11,27 +11,33 @@ from pydantic import BaseModel, Field
 
 from src.agents.deep_research.context import Context
 from src.agents.deep_research.state import ResearchState
-from src.agents.deep_research.tools import extract_text_from_mcp_result
+from src.agents.deep_research.utils import extract_text_from_mcp_result
 
 logger = logging.getLogger(__name__)
+
 
 class PlannerOutput(BaseModel):
     """The output of the research planner."""
     queries: List[str] = Field(description="A list of specific search queries to fill information gaps.")
 
+
 class URLSelectionOutput(BaseModel):
     """The output of the URL selection process."""
-    selected_urls: List[str] = Field(description="The top 10 most relevant URLs to crawl based on the query and search results.")
+    selected_urls: List[str] = Field(
+        description="The top 10 most relevant URLs to crawl based on the query and search results.")
+
 
 class ExtractionOutput(BaseModel):
     """The output of the information extraction process."""
     extracted_info: str = Field(description="The relevant information extracted from the page content.")
+
 
 def _get_field(state: Any, field_name: str, default: Any = None) -> Any:
     """Helper to get field from state whether it is a dict or a dataclass."""
     if isinstance(state, dict):
         return state.get(field_name, default)
     return getattr(state, field_name, default)
+
 
 def _get_context(runtime: Union[Runtime[Context], Any]) -> Context:
     """Helper to extract Context from runtime, handling both real and mock/fallback scenarios."""
@@ -41,6 +47,7 @@ def _get_context(runtime: Union[Runtime[Context], Any]) -> Context:
     if hasattr(runtime, "execution_runtime") and hasattr(runtime.execution_runtime, "context"):
         return runtime.execution_runtime.context
     return Context()
+
 
 async def planner_node(state: ResearchState, runtime: Runtime[Context], model: BaseChatModel) -> Dict[str, Any]:
     """
@@ -52,7 +59,7 @@ async def planner_node(state: ResearchState, runtime: Runtime[Context], model: B
     ctx = _get_context(runtime)
 
     logger.info(f"Planning research for query: {query}")
-    
+
     system_prompt_planner = ctx.system_prompt_planner
     llm = model.with_structured_output(PlannerOutput)
 
@@ -88,7 +95,9 @@ async def planner_node(state: ResearchState, runtime: Runtime[Context], model: B
         "iteration_count": _get_field(state, "iteration_count", 0) + 1
     }
 
-async def search_node(state: ResearchState, runtime: Runtime[Context], model: BaseChatModel, web_search: BaseTool) -> Dict[str, Any]:
+
+async def search_node(state: ResearchState, runtime: Runtime[Context], model: BaseChatModel, web_search: BaseTool) -> \
+Dict[str, Any]:
     """
     Executes search queries and lets the LLM select the most relevant URLs.
     """
@@ -110,7 +119,7 @@ async def search_node(state: ResearchState, runtime: Runtime[Context], model: Ba
         try:
             search_res = await web_search.ainvoke({"query": q})
             search_res_text = extract_text_from_mcp_result(search_res)
-            
+
             search_results_text.append(f"Query: {q}\nResult: {search_res_text}")
             urls = re.findall(r'https?://[^\s"<>]+', search_res_text)
             all_found_urls.extend(urls)
@@ -122,7 +131,7 @@ async def search_node(state: ResearchState, runtime: Runtime[Context], model: Ba
         return {"selected_urls": []}
 
     unique_urls = list(set(all_found_urls))
-    
+
     llm = model.with_structured_output(URLSelectionOutput)
 
     prompt = f"""
@@ -136,7 +145,7 @@ async def search_node(state: ResearchState, runtime: Runtime[Context], model: Ba
     Available URLs:
     {chr(10).join(unique_urls)}
     """
-    
+
     try:
         response = await llm.ainvoke([HumanMessage(content=prompt)])
         selected_urls = response.selected_urls[:10]
@@ -146,6 +155,7 @@ async def search_node(state: ResearchState, runtime: Runtime[Context], model: Ba
 
     logger.info(f"Selected {len(selected_urls)} URLs for crawling.")
     return {"selected_urls": selected_urls}
+
 
 async def crawl_node(state: ResearchState, runtime: Runtime[Context], web_crawl_url: BaseTool) -> Dict[str, Any]:
     """
@@ -162,7 +172,7 @@ async def crawl_node(state: ResearchState, runtime: Runtime[Context], web_crawl_
         return {"raw_crawl_results": {}}
 
     logger.info(f"Crawling {len(selected_urls)} URLs")
-    
+
     async def crawl_one(url):
         try:
             res = await web_crawl_url.ainvoke({"url": url})
@@ -177,19 +187,20 @@ async def crawl_node(state: ResearchState, runtime: Runtime[Context], web_crawl_
 
     return {"raw_crawl_results": raw_crawl_results}
 
+
 async def extraction_node(state: ResearchState, runtime: Runtime[Context], model: BaseChatModel) -> Dict[str, Any]:
     """
     Extracts relevant information from each crawled page.
     """
     raw_results = _get_field(state, "raw_crawl_results", {})
-        
+
     if not raw_results:
         logger.info("No raw crawl results to extract from.")
         return {"knowledge_base": {}}
 
     llm = model.with_structured_output(ExtractionOutput)
     knowledge_base = {}
-    
+
     async def extract_one(url, content):
         prompt = f"""
         You are an expert information extractor. Extract all information from the following page content that is relevant to the research query.
@@ -222,6 +233,7 @@ async def extraction_node(state: ResearchState, runtime: Runtime[Context], model
     logger.info(f"Extracted information from {len(knowledge_base)} pages.")
     return {"knowledge_base": knowledge_base}
 
+
 async def synthesizer_node(state: ResearchState, runtime: Runtime[Context], model: BaseChatModel) -> Dict[str, Any]:
     """
     Processes the knowledge base to determine if the research is complete
@@ -232,7 +244,7 @@ async def synthesizer_node(state: ResearchState, runtime: Runtime[Context], mode
     ctx = _get_context(runtime)
 
     logger.info("Synthesizing results...")
-    
+
     max_knowledge_chars = 30000
     knowledge_str = str(knowledge)
     if len(knowledge_str) > max_knowledge_chars:

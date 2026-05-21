@@ -27,25 +27,27 @@ def _get_field(state: Any, field_name: str, default: Any = None) -> Any:
         return state.get(field_name, default)
     return getattr(state, field_name, default)
 
+
 def should_continue(state: ResearchState, runtime: Runtime[Context]) -> Literal["planner", "end"]:
     """Conditional edge to decide whether to continue research or end."""
     if _get_field(state, "final_report"):
         return "end"
-    
+
     # Extract context safely
     ctx = getattr(runtime, "context", None)
     if not ctx and hasattr(runtime, "execution_runtime") and hasattr(runtime.execution_runtime, "context"):
         ctx = runtime.execution_runtime.context
-    
+
     max_iterations = ctx.max_iterations if ctx else 3
-    
+
     if _get_field(state, "iteration_count", 0) >= max_iterations:
         return "end"
     return "planner"
 
+
 def _build_graph(tools_dict: dict[str, BaseTool], ctx: Context) -> Any:
     """Build and compile the graph, injecting tools and the model into nodes."""
-    builder = StateGraph(ResearchState, context_schema=Context)
+    builder = StateGraph(state_schema=ResearchState, context_schema=Context)
 
     # Initialize the model once for the graph
     model = create_chat_openai(model=ctx.model)
@@ -79,6 +81,7 @@ def _build_graph(tools_dict: dict[str, BaseTool], ctx: Context) -> Any:
 
     return builder.compile(name="Deep Research Agent")
 
+
 @asynccontextmanager
 async def graph(config: dict[str, Any], runtime: ServerRuntime[Context]) -> AsyncIterator[Any]:
     """Factory for the Deep Research Agent with MCP lifecycle management."""
@@ -110,7 +113,7 @@ async def graph(config: dict[str, Any], runtime: ServerRuntime[Context]) -> Asyn
                 tools_dict["web_search"] = tool
             elif tool.name == "web_crawl_url":
                 tools_dict["web_crawl_url"] = tool
-            
+
             tools_dict[tool.name] = tool
 
     compiled = _build_graph(tools_dict, ctx)
@@ -121,6 +124,7 @@ async def graph(config: dict[str, Any], runtime: ServerRuntime[Context]) -> Asyn
         # No explicit client cleanup needed for MultiServerMCPClient 0.1.0
         pass
 
+
 def create_compiled_research_agent():
     # This is for backward compatibility if needed, but the factory is 'graph'
-    return None 
+    return None
