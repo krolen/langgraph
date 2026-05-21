@@ -1,9 +1,9 @@
 """LLM Wrapper for creating ChatOpenAI instances with custom headers."""
+import asyncio
+from typing import Any
+
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
-import asyncio
-from typing import Any, Optional
-from collections import defaultdict
 
 from src.agents.config import config
 

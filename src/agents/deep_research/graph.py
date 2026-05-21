@@ -1,13 +1,13 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from functools import partial
-from typing import Any, Literal, cast, Union
+from typing import Any, Literal
 
 from langchain_core.tools import BaseTool
+from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.graph import StateGraph, END
 from langgraph.runtime import Runtime
 from langgraph_sdk.runtime import ServerRuntime
-from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from src.agents.deep_research.context import Context
 from src.agents.deep_research.nodes import (
@@ -19,6 +19,7 @@ from src.agents.deep_research.nodes import (
 )
 from src.agents.deep_research.state import ResearchState
 from src.agents.llm_wrapper import create_chat_openai
+
 
 def _get_field(state: Any, field_name: str, default: Any = None) -> Any:
     """Helper to get field from state whether it is a dict or a dataclass."""

@@ -1,8 +1,10 @@
-from typing import Any, Dict
 from dataclasses import asdict
-from src.agents.deep_research.graph import graph as graph_factory
+from typing import Any, Dict
+
 from src.agents.deep_research.context import Context
+from src.agents.deep_research.graph import graph as graph_factory
 from src.agents.deep_research.state import ResearchState
+
 
 class DeepResearchAgentRunner:
     """

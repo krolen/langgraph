@@ -2,7 +2,13 @@ import operator
 from dataclasses import dataclass, field
 from typing import List, Annotated, Dict
 
-from src.agents.base import BaseAgentState
+
+@dataclass
+class BaseAgentState:
+    """Base state common to all agents."""
+    query: str
+    final_report: str | None
+    iteration_count: int = 0
 
 
 @dataclass

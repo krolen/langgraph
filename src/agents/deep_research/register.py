@@ -1,7 +1,8 @@
 import os
 
-from src.agents.config import config
 from src.agents.register_with_aegra import AegraRegistrar
+
+from src.agents.config import config
 
 
 def register_deep_research_agent():

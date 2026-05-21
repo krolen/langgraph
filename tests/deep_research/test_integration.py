@@ -1,14 +1,14 @@
-import asyncio
 import logging
-import pytest
 import os
-from datetime import datetime
 from dataclasses import asdict
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from langchain_core.messages import AIMessage
-from src.agents.deep_research.graph import graph as graph_factory
+
 from src.agents.deep_research.context import Context
+from src.agents.deep_research.graph import graph as graph_factory
 from src.agents.deep_research.state import ResearchState
 
 # Setup logging to file
