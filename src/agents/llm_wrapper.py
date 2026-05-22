@@ -5,8 +5,7 @@ from typing import Any
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 
-from src.agents.config import config
-
+from .config import config
 
 class ModelConcurrencyManager:
     """Manages semaphores for different models to limit parallel requests."""
@@ -23,6 +22,56 @@ class ModelConcurrencyManager:
 
 
 concurrency_manager = ModelConcurrencyManager()
+
+
+class ModelRepository:
+    """Repository to cache and reuse LLM instances to avoid redundant creation."""
+
+    def __init__(self):
+        self._models = {}
+
+    def get_model(
+        self,
+        model: str,
+        base_url: str | None = None,
+        api_key: str | None = None,
+        default_headers: dict | None = None,
+    ) -> Any:
+        """
+        Retrieve a cached model instance or create a new one if it doesn't exist.
+        """
+        # Use a tuple of the key parameters as the cache key
+        # Convert default_headers to a frozenset of items to make it hashable
+        headers_key = frozenset(default_headers.items()) if default_headers else None
+        key = (model, base_url, api_key, headers_key)
+
+        if key not in self._models:
+            self._models[key] = create_chat_openai(
+                model=model,
+                base_url=base_url,
+                api_key=api_key,
+                default_headers=default_headers
+            )
+        return self._models[key]
+
+    def get_model_by_profile(self, profile_name: str) -> Any:
+        """
+        Retrieve a model instance based on a predefined profile name.
+        """
+        from src.agents.config import MODEL_PROFILES
+        profile = MODEL_PROFILES.get(profile_name)
+        if not profile:
+            raise ValueError(f"Model profile '{profile_name}' not found in config.")
+        
+        return self.get_model(
+            model=profile.get("model"),
+            base_url=profile.get("base_url"),
+            api_key=profile.get("api_key"),
+            default_headers=profile.get("default_headers")
+        )
+
+
+model_repo = ModelRepository()
 
 
 class ConcurrencyLimitedLLM:
@@ -46,10 +95,10 @@ class ConcurrencyLimitedLLM:
 
 
 def create_chat_openai(
-        base_url: str = None,
-        model: str = None,
-        api_key: str = None,
-        default_headers: dict = None,
+        base_url: str | None = None,
+        model: str | None = None,
+        api_key: str | None = None,
+        default_headers: dict | None = None,
         **kwargs
 ) -> Any:
     """
@@ -59,7 +108,7 @@ def create_chat_openai(
     llm = ChatOpenAI(
         base_url=base_url or config.llm_base_url,
         model=model_name,
-        api_key=api_key or config.llm_api_key,
+        api_key=api_key or "my-key",
         default_headers=default_headers or {},
         **kwargs
     )
@@ -69,19 +118,3 @@ def create_chat_openai(
     return ConcurrencyLimitedLLM(llm, semaphore)
 
 
-# Router LLM instance - for routing decisions, sent to specific backend via bifrost
-router_llm = create_chat_openai(
-    default_headers={"X-My-Route": "router"}
-)
-
-# Local LLM instance - for local processing, may go to different backend
-router_llm_local = create_chat_openai(
-    default_headers={"X-My-Route": "local-fallback"}
-)
-
-# Local LLM instance - for local processing, may go to different backend
-llm_local = create_chat_openai(
-    base_url="http://192.168.0.188:8888/v1",
-    model="krolen/mymodel",
-    api_key="my-key"
-)

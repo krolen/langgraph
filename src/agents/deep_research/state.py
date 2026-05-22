@@ -7,7 +7,7 @@ from typing import List, Annotated, Dict
 class BaseAgentState:
     """Base state common to all agents."""
     query: str
-    final_report: str | None
+    final_report: str | None = None
     iteration_count: int = 0
 
 

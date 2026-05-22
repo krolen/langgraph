@@ -38,7 +38,7 @@ async def test_deep_research_agent_live():
     ctx = Context(
         enable_mcp=True, 
         max_iterations=1,
-        model="krolen/mymodel"
+        default_profile="local",
     )
     
     mock_runtime = MagicMock()

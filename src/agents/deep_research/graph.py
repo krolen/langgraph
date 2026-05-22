@@ -18,7 +18,7 @@ from src.agents.deep_research.nodes import (
     synthesizer_node,
 )
 from src.agents.deep_research.state import ResearchState
-from src.agents.llm_wrapper import create_chat_openai
+from src.agents.llm_wrapper import model_repo
 
 
 def _get_field(state: Any, field_name: str, default: Any = None) -> Any:
@@ -49,19 +49,26 @@ def _build_graph(tools_dict: dict[str, BaseTool], ctx: Context) -> Any:
     """Build and compile the graph, injecting tools and the model into nodes."""
     builder = StateGraph(state_schema=ResearchState, context_schema=Context)
 
-    # Initialize the model once for the graph
-    model = create_chat_openai(model=ctx.model)
+    # Initialize models for different roles using the model_repo to avoid redundant creation
+    def get_model(attr_name: str):
+        profile_name = getattr(ctx, attr_name, None) or ctx.default_profile
+        return model_repo.get_model_by_profile(profile_name)
 
-    # Bind tools and model to nodes
+    planner_model = get_model("planner_profile")
+    search_model = get_model("search_profile")
+    extractor_model = get_model("extractor_profile")
+    synthesizer_model = get_model("synthesizer_profile")
+
+    # Bind tools and models to nodes
     web_search = tools_dict.get("web_search")
     web_crawl_url = tools_dict.get("web_crawl_url")
 
     # Add nodes
-    builder.add_node("planner", partial(planner_node, model=model))
-    builder.add_node("search", partial(search_node, model=model, web_search=web_search))
+    builder.add_node("planner", partial(planner_node, model=planner_model))
+    builder.add_node("search", partial(search_node, model=search_model, web_search=web_search))
     builder.add_node("crawl", partial(crawl_node, web_crawl_url=web_crawl_url))
-    builder.add_node("extract", partial(extraction_node, model=model))
-    builder.add_node("synthesizer", partial(synthesizer_node, model=model))
+    builder.add_node("extract", partial(extraction_node, model=extractor_model))
+    builder.add_node("synthesizer", partial(synthesizer_node, model=synthesizer_model))
 
     # Define edges
     builder.set_entry_point("planner")
@@ -125,6 +132,3 @@ async def graph(config: dict[str, Any], runtime: ServerRuntime[Context]) -> Asyn
         pass
 
 
-def create_compiled_research_agent():
-    # This is for backward compatibility if needed, but the factory is 'graph'
-    return None
