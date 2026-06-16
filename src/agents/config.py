@@ -40,7 +40,7 @@ MODEL_PROFILES = {
         "default_headers": {"X-My-Route": "fabric"},
     },
     "local": {
-        "model": "krolen/mymodel",
+        "model": "mymodel",
         "base_url": LLM_BASE_URL_LOCAL,
     },
 }

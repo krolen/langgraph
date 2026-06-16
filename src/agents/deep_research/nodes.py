@@ -1,13 +1,16 @@
 import asyncio
 import logging
 import re
-from typing import Any, Dict, List, Union
+import json
+from typing import Any, Dict, List, Union, Optional
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import BaseTool
 from langgraph.runtime import Runtime
 from pydantic import BaseModel, Field
+
+from src.agents.deep_research.models import SearchResult, WebSearchResponse
 
 from src.agents.deep_research.context import Context
 from src.agents.deep_research.state import ResearchState
@@ -118,13 +121,30 @@ Dict[str, Any]:
         logger.debug(f"Performing search for: {q}")
         try:
             search_res = await web_search.ainvoke({"query": q})
-            search_res_text = extract_text_from_mcp_result(search_res)
-
-            search_results_text.append(f"Query: {q}\nResult: {search_res_text}")
-            urls = re.findall(r'https?://[^\s"<>]+', search_res_text)
-            all_found_urls.extend(urls)
+            
+            if isinstance(search_res, WebSearchResponse):
+                resp = search_res
+            elif isinstance(search_res, list) and len(search_res) > 0:
+                # Handle MCP collection response: [{'text': '...', ...}]
+                first_item = search_res[0]
+                if isinstance(first_item, dict) and "text" in first_item:
+                    try:
+                        data = json.loads(first_item["text"])
+                        resp = WebSearchResponse.model_validate(data)
+                    except (json.JSONDecodeError, Exception) as e:
+                        logger.warning(f"Failed to parse JSON from search text: {e}")
+                        raise
+                else:
+                    resp = WebSearchResponse.model_validate(search_res)
+            else:
+                resp = WebSearchResponse.model_validate(search_res)
+            
+            for res in resp.results:
+                search_results_text.append(f"Query: {q}\nTitle: {res.title}\nURL: {res.url}\nContent: {res.content}")
+                all_found_urls.append(res.url)
+                
         except Exception as e:
-            logger.warning(f"Search for '{q}' failed: {e}")
+            logger.error(f"Search for '{q}' failed: {e}")
 
     if not all_found_urls:
         logger.warning("No URLs found in search results.")
@@ -171,7 +191,7 @@ async def crawl_node(state: ResearchState, runtime: Runtime[Context], web_crawl_
         logger.error("web_crawl_url tool not available")
         return {"raw_crawl_results": {}}
 
-    logger.info(f"Crawling {len(selected_urls)} URLs")
+    logger.info(f"Crawling {len(selected_urls)} URLs: {selected_urls}")
 
     async def crawl_one(url):
         try:

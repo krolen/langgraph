@@ -52,7 +52,7 @@ async def test_deep_research_agent_live():
         logger.info("Agent built successfully via factory. Connecting to real services...")
         
         initial_state = asdict(ResearchState(
-            query="Briefly explain what Aegra is.",
+            query="Briefly show the latest main news in Toronto.",
             iteration_count=0
         ))
         

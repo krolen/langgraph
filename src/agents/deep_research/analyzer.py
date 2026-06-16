@@ -18,7 +18,7 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     return (a @ b.T)
 
 
-def get_relevant_chunks(page_content: str, query: str, top_k=5) -> str:
+def get_relevant_chunks(page_content: str, query: str, top_k=5, score_threshold=0.4) -> str:
     # 1. Split
     chunks = splitter.split_text(page_content)
 
@@ -33,7 +33,10 @@ def get_relevant_chunks(page_content: str, query: str, top_k=5) -> str:
     scores = cosine_similarity(query_embedding, chunk_embeddings)[0]  # shape: (N,)
 
     # 4. Take top-k, preserve reading order (important for coherence)
-    top_indices = np.argsort(scores)[-top_k:]
+    top_indices = [
+        i for i in np.argsort(scores)[-top_k:]
+        if scores[i] > score_threshold      # ← drop chunks that scored poorly
+    ]
     top_indices = sorted(top_indices)  # ← restore document order
 
     relevant_text = "\n\n".join(chunks[i] for i in top_indices)
