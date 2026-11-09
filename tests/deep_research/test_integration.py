@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from dataclasses import asdict
@@ -64,10 +65,14 @@ async def test_deep_research_agent_integration():
     mock_llm.ainvoke.return_value = AIMessage(content="COMPLETE: Yes\nREPORT: The refactor is successful.")
 
     # 2. Mock MCP Tools
+    mock_search_result_json = json.dumps({
+        "query": "test query 1",
+        "results": [{"title": "Example", "url": "https://example.com/page1", "content": "Test content"}]
+    })
     mock_search_tool = AsyncMock()
     mock_search_tool.name = "web_search"
-    mock_search_tool.ainvoke.return_value = [{"type": "text", "text": "Results found: https://example.com/page1"}]
-    
+    mock_search_tool.ainvoke.return_value = [{"type": "text", "text": mock_search_result_json}]
+
     mock_crawl_tool = AsyncMock()
     mock_crawl_tool.name = "web_crawl_url"
     mock_crawl_tool.ainvoke.return_value = [{"type": "text", "text": "Page content: The refactor is successful."}]
@@ -82,13 +87,13 @@ async def test_deep_research_agent_integration():
     mock_runtime.user = None
 
     # 4. Patch and Execute
-    with patch("src.agents.deep_research.graph.create_chat_openai", return_value=mock_llm), \
-         patch("src.agents.deep_research.graph.MultiServerMCPClient") as mock_mcp_class:
+    with patch("src.agents.llm_wrapper.create_chat_openai", return_value=mock_llm), \
+         patch("src.agents.deep_research.graph.MCPAdapter") as mock_mcp_class:
         
         mock_mcp_instance = mock_mcp_class.return_value
         mock_mcp_instance.__aenter__ = AsyncMock(return_value=mock_mcp_instance)
         mock_mcp_instance.__aexit__ = AsyncMock(return_value=None)
-        mock_mcp_instance.get_tools = AsyncMock(return_value=[mock_search_tool, mock_crawl_tool])
+        mock_mcp_instance.list_tools = AsyncMock(return_value=[mock_search_tool, mock_crawl_tool])
 
         async with graph_factory({}, mock_runtime) as agent:
             logger.info("Agent built via factory (mocked).")

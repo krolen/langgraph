@@ -4,7 +4,7 @@ from functools import partial
 from typing import Any, Literal
 
 from langchain_core.tools import BaseTool
-from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain.mcp import MCPAdapter
 from langgraph.graph import StateGraph, END
 from langgraph.runtime import Runtime
 from langgraph_sdk.runtime import ServerRuntime
@@ -106,29 +106,29 @@ async def graph(config: dict[str, Any], runtime: ServerRuntime[Context]) -> Asyn
     tools_dict: dict[str, BaseTool] = {}
 
     if ctx.enable_mcp:
-        connections = {
-            "research-tools": {
-                "url": ctx.mcp_server_url,
-                "transport": "streamable_http",
-            }
-        }
-        mcp_client = MultiServerMCPClient(connections)
-        # As of langchain-mcp-adapters 0.1.0, get_tools() manages sessions per call
-        mcp_tools = await mcp_client.get_tools()
-        for tool in mcp_tools:
-            if tool.name == "web_search":
-                tools_dict["web_search"] = tool
-            elif tool.name == "web_crawl_url":
-                tools_dict["web_crawl_url"] = tool
+        # Keep the MCP client (and its session) open for the whole run so the
+        # injected tools remain callable while the graph executes below.
+        adapter = MCPAdapter(ctx.mcp_server_url)
+        async with adapter:
+            mcp_tools = await adapter.list_tools()
+            for tool in mcp_tools:
+                if tool.name == "web_search":
+                    tools_dict["web_search"] = tool
+                elif tool.name == "web_crawl_url":
+                    tools_dict["web_crawl_url"] = tool
+                tools_dict[tool.name] = tool
 
-            tools_dict[tool.name] = tool
+            compiled = _build_graph(tools_dict, ctx)
+            try:
+                yield compiled
+            finally:
+                pass
+        return
 
     compiled = _build_graph(tools_dict, ctx)
-
     try:
         yield compiled
     finally:
-        # No explicit client cleanup needed for MultiServerMCPClient 0.1.0
         pass
 
 
