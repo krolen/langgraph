@@ -1,54 +1,39 @@
-# Deep Research Agent Plan
+# Deep Research Agent: Current Design
 
 ## Objective
-Create a research agent that leverages the `my-nas-mcp` server's web search and page crawling capabilities to perform iterative, deep research on a given query.
+Provide a locally runnable LangGraph research agent that uses MCP-provided web search and page crawling to research a query and produce a synthesized report. AEGRA deployment and registration are out of scope.
 
 ## Architecture
 
-### 1. State Definition (`ResearchState`)
-The agent will maintain a state that tracks the progress of the research:
+### State (`ResearchState`)
+The graph maintains:
 - `query`: The original research goal.
-- `discovered_urls`: A list of URLs found during search.
-- `knowledge_base`: A collection of extracted content and summaries from crawled pages.
+- `discovered_urls`: Reserved for discovered URLs; currently unused.
+- `knowledge_base`: A URL-keyed collection of extracted information, merged across graph updates.
+- `raw_crawl_results`: The latest URL-to-page-content crawl results.
 - `research_plan`: The current set of questions or gaps that need to be addressed.
 - `final_report`: The synthesized final answer.
-- `iteration_count`: To track iterations and prevent infinite loops (max 3).
+- `iteration_count`: A guard against unbounded research; its default limit is three iterations.
 
-### 2. Tool Integration
-The agent will use wrappers for the following MCP tools:
-- `web_search`: To discover relevant URLs based on a query.
-- `web_crawl_url`: To extract markdown/HTML content from a specific URL.
-- `web_crawl_multiple_urls`: To efficiently gather content from multiple sources.
+### MCP Tool Integration
+The graph factory connects to the configured MCP endpoint when `enable_mcp` is true and exposes these discovered tools to nodes:
+- `web_search`: Discover search-result URLs for each planner query.
+- `web_crawl_url`: Fetch selected pages concurrently.
 
-### 3. Graph Workflow
-The LangGraph will implement the following loop:
-1. **Planner Node**: Analyzes the current `knowledge_base` and `query` to determine what information is missing. It updates the `research_plan` and generates search queries.
-2. **Executor Node**: Executes the search and crawl tools based on the planner's output.
-3. **Synthesizer Node**: Processes the new information, updates the `knowledge_base`, and determines if the research is complete.
-4. **Conditional Edge**: 
-    - If research is incomplete and `iteration_count` < 3 $\rightarrow$ Loop back to **Planner**.
-    - If research is complete or limit reached $\rightarrow$ Proceed to **Final Report**.
-5. **Reporter Node**: Generates a comprehensive final research report based on the accumulated knowledge.
+### Graph Workflow
+`planner → search → crawl → extract → synthesizer`
 
-## Implementation Steps
+The synthesizer conditionally routes to the planner or `END`. Role-specific LLM profiles are supplied through `Context`, and `ModelRepository` caches the underlying clients while limiting concurrent async requests per model.
 
-- [ ] **Define `ResearchState`**: Add the state model to `src/agents/state.py`.
-- [ ] **Implement MCP Tool Wrappers**: Create `src/tools/mcp_tools.py` to interface with the MCP server.
-- [ ] **Develop Research Nodes**:
-    - `planner_node`: Logic for gap analysis and query generation.
-    - `executor_node`: Logic for tool invocation.
-    - `synthesizer_node`: Logic for information aggregation.
-- [ ] **Construct the LangGraph**: Define the graph structure and conditional edges.
-- [ ] **Create the Agent Entry Point**: Implement `create_research_agent()` in `src/agents/research_agent.py`.
-- [ ] **Local Testing**: Create a local test suite to verify tool integration, loop restrictions (max 3), and synthesis quality.
-- [ ] **Aegra Integration Testing**: Verify the agent's behavior when registered and run via the Aegra infrastructure.
+## Current Implementation Notes
+
+- The mock integration test covers factory setup, MCP tool discovery, and one complete graph pass.
+- The live test is separate and connects to configured LLM and MCP services.
+- An incomplete synthesizer response loops back to the planner until `max_iterations` is reached, then returns a partial report.
+- Run locally with `uv run python -m src.main "question"`. The graph registry points to the deep research factory; no HTTP API is implemented.
 
 ## Configuration
-To ensure flexibility and security, all environment-specific variables will be managed via a `.env` file and a centralized configuration module (`src/agents/config.py`).
+Environment-specific values are read from `.env` by `src/agents/config.py`, and per-run behavior is represented by `Context`.
 - **Key Variables**:
-    - `MCP_SERVER_URL`: The endpoint for the `my-nas-mcp` server.
+    - `MCP_SERVER_URL`: MCP endpoint that supplies search and crawl tools.
     - `LLM_BASE_URL` & `LLM_MODEL`: Connection details for the local LLM.
-    - `AEGRA_URL`: Endpoint for AEGRA registration.
-
-## Integration with Aegra
-The agent will be designed to be compatible with the Aegra infrastructure, ensuring it can be registered and self-hosted.

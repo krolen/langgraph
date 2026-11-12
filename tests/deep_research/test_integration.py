@@ -1,3 +1,4 @@
+from typing import Any
 import json
 import logging
 import os
@@ -23,8 +24,9 @@ logger.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 logger.addHandler(logging.StreamHandler())
 
+@pytest.mark.parametrize("iterations", [1, 2])
 @pytest.mark.asyncio
-async def test_deep_research_agent_integration():
+async def test_deep_research_agent_integration(iterations: Any) -> Any:
     """
     End-to-end integration test for the Deep Research Agent.
     Verifies factory lifecycle, tool injection, and graph execution with mocks.
@@ -48,7 +50,7 @@ async def test_deep_research_agent_integration():
     mock_extraction_output.extracted_info = "Verified: The refactor works perfectly."
     
     # Setup the structured output chain
-    def mock_with_structured_output(output_schema):
+    def mock_with_structured_output(output_schema: Any) -> Any:
         m = MagicMock()
         schema_str = str(output_schema)
         if "PlannerOutput" in schema_str:
@@ -62,7 +64,7 @@ async def test_deep_research_agent_integration():
     mock_llm.with_structured_output = mock_with_structured_output
     
     # Final synthesizer response
-    mock_llm.ainvoke.return_value = AIMessage(content="COMPLETE: Yes\nREPORT: The refactor is successful.")
+    mock_llm.ainvoke.side_effect = [AIMessage(content="COMPLETE: No\nREPORT: Need more evidence.")] * (iterations - 1) + [AIMessage(content="COMPLETE: Yes\nREPORT: The refactor is successful.")]
 
     # 2. Mock MCP Tools
     mock_search_result_json = json.dumps({
@@ -78,7 +80,7 @@ async def test_deep_research_agent_integration():
     mock_crawl_tool.ainvoke.return_value = [{"type": "text", "text": "Page content: The refactor is successful."}]
 
     # 3. Create Mock Runtime
-    ctx = Context(enable_mcp=True, max_iterations=1)
+    ctx = Context(enable_mcp=True, max_iterations=iterations)
     
     mock_runtime = MagicMock()
     mock_runtime.context = ctx
@@ -87,7 +89,7 @@ async def test_deep_research_agent_integration():
     mock_runtime.user = None
 
     # 4. Patch and Execute
-    with patch("src.agents.llm_wrapper.create_chat_openai", return_value=mock_llm), \
+    with patch("src.agents.deep_research.graph.model_repo.get_model_by_profile", return_value=mock_llm), \
          patch("src.agents.deep_research.graph.MCPAdapter") as mock_mcp_class:
         
         mock_mcp_instance = mock_mcp_class.return_value
@@ -103,12 +105,12 @@ async def test_deep_research_agent_integration():
             ))
             
             logger.info("Invoking agent...")
-            result = await agent.ainvoke(initial_state, config={"configurable": {"runtime": mock_runtime}})
+            result = await agent.ainvoke(initial_state, context=ctx)
             
             # 5. Assertions
             assert "final_report" in result
             assert "The refactor is successful" in result["final_report"]
-            assert result["iteration_count"] == 1
+            assert result["iteration_count"] == iterations
             
             logger.info(f"Test result: {result['final_report']}")
             logger.info("Integration test successful.")

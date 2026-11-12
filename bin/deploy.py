@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from typing import Any
 import argparse
 import json
 import os
@@ -9,7 +10,7 @@ import urllib.request
 import urllib.error
 
 # Basic env loading if .env exists
-def load_env_file(file_path=".env"):
+def load_env_file(file_path: str = ".env") -> Any:
     if os.path.exists(file_path):
         with open(file_path, "r") as f:
             for line in f:
@@ -26,7 +27,7 @@ load_env_file()
 DEFAULT_AEGRA_PATH = "/mnt/truenas/nfs/aegra"
 DEFAULT_AEGRA_URL = os.environ.get("AEGRA_URL", "http://localhost:8000")
 
-def get_manifest(agent_dir):
+def get_manifest(agent_dir: Any) -> Any:
     """Load and validate the manifest.json for the agent."""
     manifest_path = Path("src/agents") / agent_dir / "manifest.json"
     if not manifest_path.exists():
@@ -40,7 +41,7 @@ def get_manifest(agent_dir):
         print(f"⚠️ Warning: Could not read manifest at {manifest_path}: {e}")
         return None
 
-def sync_code(agent_dir, target_path):
+def sync_code(agent_dir: Any, target_path: Any) -> Any:
     """Sync agent code to the target path."""
     src_dir = Path("src/agents") / agent_dir
     if not src_dir.exists():
@@ -52,7 +53,7 @@ def sync_code(agent_dir, target_path):
 
     dest_agents_root.mkdir(parents=True, exist_ok=True)
 
-    def ignore_files(dir, files):
+    def ignore_files(dir: Any, files: Any) -> Any:
         return [f for f in files if f == "__pycache__" or f.startswith(".")]
 
     for item in os.listdir("src/agents"):
@@ -70,7 +71,7 @@ def sync_code(agent_dir, target_path):
     
     print("✅ Code sync complete.")
 
-def update_config(agent_dir, target_path):
+def update_config(agent_dir: Any, target_path: Any) -> Any:
     """Update aegra.json in the target path."""
     config_path = Path(target_path) / "aegra.json"
     graph_id = agent_dir.replace("_", "-") + "-agent"
@@ -112,7 +113,7 @@ def update_config(agent_dir, target_path):
     print(f"✅ Config updated with {graph_id}.")
     return graph_id
 
-def register_agent(graph_id, agent_dir, aegra_url, api_key):
+def register_agent(graph_id: Any, agent_dir: Any, aegra_url: Any, api_key: Any) -> Any:
     """Register agent with Aegra Control Plane using manifest.json."""
     if not api_key:
         print("⚠️ Warning: AEGRA_API_KEY not found. Skipping registration.")
@@ -157,7 +158,7 @@ def register_agent(graph_id, agent_dir, aegra_url, api_key):
     except Exception as e:
         print(f"❌ Registration failed: {e}")
 
-def main():
+def main() -> Any:
     parser = argparse.ArgumentParser(description="Deploy Aegra agents to a mounted directory.")
     parser.add_argument("agent", help="Name of the agent directory in src/agents/")
     parser.add_argument("--path", help="Path to the mounted Aegra directory", default=os.environ.get("AEGRA_PATH", DEFAULT_AEGRA_PATH))

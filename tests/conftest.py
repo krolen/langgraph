@@ -1,7 +1,8 @@
+from typing import Any
 import logging
 from pathlib import Path
 
-def pytest_configure(config):
+def pytest_configure(config: Any) -> Any:
     """
     Configure logging for the test suite.
     All logs from the application and tests will be written to the ./logs directory.
@@ -24,7 +25,7 @@ def pytest_configure(config):
     logging.getLogger("src.agents.deep_research").setLevel(logging.DEBUG)
     logging.getLogger("src.agents").setLevel(logging.INFO)
 
-def pytest_runtest_setup(item):
+def pytest_runtest_setup(item: Any) -> Any:
     """
     Clear the log file before each test run to avoid confusion.
     """

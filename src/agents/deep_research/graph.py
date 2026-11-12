@@ -28,7 +28,7 @@ def _get_field(state: Any, field_name: str, default: Any = None) -> Any:
     return getattr(state, field_name, default)
 
 
-def should_continue(state: ResearchState, runtime: Runtime[Context]) -> Literal["planner", "end"]:
+async def should_continue(state: ResearchState, runtime: Runtime[Context]) -> Literal["planner", "end"]:
     """Conditional edge to decide whether to continue research or end."""
     if _get_field(state, "final_report"):
         return "end"
@@ -50,7 +50,7 @@ def _build_graph(tools_dict: dict[str, BaseTool], ctx: Context) -> Any:
     builder = StateGraph(state_schema=ResearchState, context_schema=Context)
 
     # Initialize models for different roles using the model_repo to avoid redundant creation
-    def get_model(attr_name: str):
+    def get_model(attr_name: str) -> Any:
         profile_name = getattr(ctx, attr_name, None) or ctx.default_profile
         return model_repo.get_model_by_profile(profile_name)
 
@@ -89,46 +89,49 @@ def _build_graph(tools_dict: dict[str, BaseTool], ctx: Context) -> Any:
     return builder.compile(name="Deep Research Agent")
 
 
-@asynccontextmanager
-async def graph(config: dict[str, Any], runtime: ServerRuntime[Context]) -> AsyncIterator[Any]:
-    """Factory for the Deep Research Agent with MCP lifecycle management."""
+def _extract_context(runtime: ServerRuntime[Context]) -> Context:
+    """Extract the run context, tolerating untyped or missing context objects."""
     ert = getattr(runtime, "execution_runtime", None)
-    if ert and hasattr(ert, "context") and isinstance(ert.context, Context):
-        ctx = ert.context
-    else:
-        # Fallback for initialization or non-typed context
-        raw_ctx = getattr(ert, "context", {}) if ert else {}
-        if isinstance(raw_ctx, dict):
-            ctx = Context(**raw_ctx)
-        else:
-            ctx = Context()
+    ctx = getattr(ert, "context", None) if ert is not None else None
+    if isinstance(ctx, Context):
+        return ctx
+    if isinstance(ctx, dict):
+        return Context(**ctx)
+    return Context()
 
-    tools_dict: dict[str, BaseTool] = {}
 
-    if ctx.enable_mcp:
+@asynccontextmanager
+async def graph(
+    config: dict[str, Any],
+    runtime: ServerRuntime[Context],
+) -> AsyncIterator[Any]:
+    """Factory for the Deep Research Agent with MCP lifecycle management."""
+    ctx = _extract_context(runtime)
+
+    if runtime.execution_runtime is not None and ctx.enable_mcp:
         # Keep the MCP client (and its session) open for the whole run so the
-        # injected tools remain callable while the graph executes below.
+        # injected tools remain callable while the graph executes.
         adapter = MCPAdapter(ctx.mcp_server_url)
         async with adapter:
-            mcp_tools = await adapter.list_tools()
-            for tool in mcp_tools:
-                if tool.name == "web_search":
-                    tools_dict["web_search"] = tool
-                elif tool.name == "web_crawl_url":
-                    tools_dict["web_crawl_url"] = tool
-                tools_dict[tool.name] = tool
-
-            compiled = _build_graph(tools_dict, ctx)
-            try:
-                yield compiled
-            finally:
-                pass
-        return
-
-    compiled = _build_graph(tools_dict, ctx)
-    try:
-        yield compiled
-    finally:
-        pass
+            tools = _validated_tools(await adapter.list_tools())
+            yield _build_graph(tools, ctx)
+    else:
+        yield _build_graph({}, ctx)
 
 
+@asynccontextmanager
+async def local_graph(ctx: Context) -> AsyncIterator[Any]:
+    """Keep tools connected while a local caller executes the graph."""
+    if ctx.enable_mcp:
+        async with MCPAdapter(ctx.mcp_server_url) as adapter:
+            yield _build_graph(_validated_tools(await adapter.list_tools()), ctx)
+    else:
+        yield _build_graph({}, ctx)
+
+
+def _validated_tools(tools: list[BaseTool]) -> dict[str, BaseTool]:
+    by_name = {tool.name: tool for tool in tools}
+    missing = {"web_search", "web_crawl_url"} - by_name.keys()
+    if missing:
+        raise ValueError(f"MCP server is missing required tools: {sorted(missing)}")
+    return by_name

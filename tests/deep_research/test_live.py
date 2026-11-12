@@ -1,3 +1,4 @@
+from typing import Any
 import asyncio
 import logging
 import os
@@ -26,8 +27,9 @@ for logger_name in ["src.agents.deep_research.nodes", "src.agents.deep_research.
     l = logging.getLogger(logger_name)
     l.addHandler(file_handler)
 
+@pytest.mark.skipif(os.getenv("RUN_LIVE_TESTS") != "1", reason="Set RUN_LIVE_TESTS=1 to contact real services")
 @pytest.mark.asyncio
-async def test_deep_research_agent_live():
+async def test_deep_research_agent_live() -> Any:
     """
     Live integration test for the Deep Research Agent.
     Runs against actual LLM and MCP services.
@@ -59,7 +61,7 @@ async def test_deep_research_agent_live():
         logger.info("Invoking agent for live research...")
         result = await agent.ainvoke(
             initial_state, 
-            config={"configurable": {"runtime": mock_runtime}}
+            context=ctx
         )
         
         logger.info("Live execution finished.")

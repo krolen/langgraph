@@ -1,6 +1,7 @@
-"""AEGRA deployment configuration for the web search agent."""
+"""Environment configuration for local research."""
 
 import os
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -8,7 +9,9 @@ load_dotenv()
 
 # LLM Configuration
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://192.168.0.100:4444/v1")
-LLM_BASE_URL_LOCAL = os.getenv("LLM_BASE_URL_LOCAL", "http://192.168.0.188:8888/v1")
+LLM_BASE_URL_LOCAL = os.getenv("LLM_BASE_URL_LOCAL", LLM_BASE_URL)
+LLM_MODEL = os.getenv("LLM_MODEL", "mymodel")
+LLM_API_KEY = os.getenv("LLM_API_KEY", "my-key")
 
 # local quick model
 # LLM_MODEL = os.getenv("LLM_MODEL", "krolen/mymodel")
@@ -28,29 +31,34 @@ AEGRA_URL = os.getenv("AEGRA_URL", "http://192.168.0.100:2026")
 AEGRA_API_KEY = os.getenv("AEGRA_API_KEY", "my-key")
 
 
-MODEL_PROFILES = {
+MODEL_PROFILES: dict[str, dict[str, Any]] = {
     "openrouter": {
         "model": "openrouter",
         "base_url": LLM_BASE_URL,
+        "api_key": LLM_API_KEY,
         "default_headers": {"X-My-Route": "openrouter"},
     },
     "fabric": {
         "model": "fabric",
         "base_url": LLM_BASE_URL,
+        "api_key": LLM_API_KEY,
         "default_headers": {"X-My-Route": "fabric"},
     },
     "local": {
-        "model": "mymodel",
+        "model": LLM_MODEL,
         "base_url": LLM_BASE_URL_LOCAL,
+        "api_key": LLM_API_KEY,
     },
 }
 
 class AgentConfig:
     """Configuration container for the web search agent."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize configuration from environment."""
         self.llm_base_url = LLM_BASE_URL
+        self.llm_model = LLM_MODEL
+        self.llm_api_key = LLM_API_KEY
         self.searxng_url = SEARXNG_URL
         self.mcp_server_url = MCP_SERVER_URL
         self.aegra_url = AEGRA_URL

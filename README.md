@@ -1,61 +1,40 @@
-# LangGraph Web Search Agent
+# LangGraph Research Agent
 
-A LangGraph-based web search agent that provides privacy-focused web search capabilities to local LLMs using SearXNG.
+A local research workflow using configured OpenAI-compatible LLM and MCP services.
 
-## Features
-
-- Privacy-focused web searches via SearXNG
-- LangGraph agent workflow with query processing, search, formatting, and summarization
-- FastAPI server with streaming support
-- Designed for deployment on AEGRA framework
-
-## Quick Start
+## Run locally
 
 ```bash
-# Install dependencies
-uv pip install -e .
-
-# Copy environment file
+uv sync
 cp .env.example .env
-
-# Start the server
-uv run uvicorn src.main:app --host 0.0.0.0 --port 8000
+# Edit .env with your LLM model, credentials and MCP endpoint.
+uv run python -m src.main "What changed in battery recycling technology?"
 ```
 
-## API Endpoints
+Use `--max-iterations 3` to bound research, `--profile local` to select a model profile, and `--json` to include evidence and tool errors. The process runs locally; the configured services must be reachable. There is currently no HTTP server or Docker setup.
 
-- `GET /health` - Health check
-- `POST /search` - Perform web search
-- `POST /stream/search` - Streaming search results
+`langgraph.json` also identifies the `deep_research` graph factory for a compatible LangGraph server. Deployment and AEGRA registration are outside the current scope.
 
 ## Configuration
 
-Set environment variables in `.env` (copy from `.env.example`):
+See `.env.example`. `LLM_BASE_URL`, `LLM_MODEL`, and `LLM_API_KEY` configure the local profile. `LLM_BASE_URL_LOCAL` optionally overrides its endpoint. The `fabric` and `openrouter` profiles use routing headers and their respective model names. `MCP_SERVER_URL` must expose `web_search` and `web_crawl_url`.
 
-```
-# LLM Configuration (REQUIRED)
-LLM_BASE_URL=http://192.168.0.100:4444/v1
-LLM_MODEL=my-vllm/mymodel
-LLM_API_KEY=your_actual_api_key_here  # Get from your LLM provider
+## Workflow
 
-# SearXNG Configuration
-SEARXNG_URL=http://192.168.0.100:8089
+`planner → search → crawl → extract → synthesizer`
 
-# AEGRA Configuration
-AEGRA_URL=http://192.168.0.100:2026
-AEGRA_API_KEY=your_aegra_api_key_here  # Optional
+Incomplete research returns to the planner with identified gaps. At the iteration limit, the latest partial report is returned. Model calls share a concurrency limit, including calls with structured output. URL selection is restricted to search results. Failed crawls and extractions are recorded as errors rather than evidence.
 
-# Application Configuration
-APP_HOST=0.0.0.0
-APP_PORT=8000
-DEBUG=false
+Extraction limits page text to the configured character budget. Synthesis shares its evidence budget across sources and requests inline citations; a source list is appended to every evidence-based report. These limits can omit relevant material; citations and generated claims still need review. The optional embedding analyzer loads its model only when used and is not part of the active graph.
 
-# Optional: PostgreSQL for checkpoint persistence (via AEGRA)
-POSTGRES_URL=postgresql://user:password@localhost:5432/langgraph
-```
-
-## Docker
+## Development
 
 ```bash
-docker-compose up
+uv sync --extra dev
+uv run pytest tests/
+uv run mypy .
+# Explicitly opt into requests to real LLM and MCP services:
+RUN_LIVE_TESTS=1 uv run pytest tests/deep_research/test_live.py
 ```
+
+The ordinary suite uses mocks and skips live service checks.

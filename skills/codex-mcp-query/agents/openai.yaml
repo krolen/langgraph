@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex MCP Query"
+  short_description: "Run tasks through local Codex MCP"
+  default_prompt: "Use $codex-mcp-query to delegate this task through the configured local Codex MCP server."
