@@ -50,29 +50,21 @@ async def test_deep_research_agent_live() -> Any:
     mock_runtime.user = None
 
     # 2. Build and Execute via Factory
-    async with graph_factory({}, mock_runtime) as agent:
-        logger.info("Agent built successfully via factory. Connecting to real services...")
-        
-        initial_state = asdict(ResearchState(
-            query="Briefly show the latest main news in Toronto.",
-            iteration_count=0
-        ))
-        
-        logger.info("Invoking agent for live research...")
-        result = await agent.ainvoke(
-            initial_state, 
-            context=ctx
-        )
-        
-        logger.info("Live execution finished.")
-        
-        # 3. Assertions on real output
-        assert "final_report" in result
-        assert result["final_report"] is not None
-        assert len(result["final_report"]) > 10
-        
-        logger.info(f"LIVE VERIFICATION SUCCESSFUL. Report length: {len(result['final_report'])}")
-        logger.info(f"Final Report: {result['final_report']}")
+    agent = graph_factory({}, mock_runtime)
+    logger.info("Agent built successfully via factory. Connecting to real services...")
+    initial_state = asdict(ResearchState(
+        query="Briefly show the latest main news in Toronto.",
+        iteration_count=0
+    ))
+    logger.info("Invoking agent for live research...")
+    result = await agent.ainvoke(initial_state, context=ctx)
+    logger.info("Live execution finished.")
+
+    assert "final_report" in result
+    assert result["final_report"] is not None
+    assert len(result["final_report"]) > 10
+    logger.info(f"LIVE VERIFICATION SUCCESSFUL. Report length: {len(result['final_report'])}")
+    logger.info(f"Final Report: {result['final_report']}")
 
 if __name__ == "__main__":
     # Also add stream handler if run directly

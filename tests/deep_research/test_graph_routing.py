@@ -33,10 +33,6 @@ async def test_incomplete_research_loops_until_iteration_limit() -> Any:
 async def test_graph_inspection_skips_mcp_connection() -> Any:
     runtime: Any = SimpleNamespace(execution_runtime=None)
     compiled = object()
-    with patch("src.agents.deep_research.graph.MCPAdapter") as adapter, patch(
-        "src.agents.deep_research.graph._build_graph", return_value=compiled
-    ) as build:
-        async with graph({}, runtime) as result:
-            assert result is compiled
-    adapter.assert_not_called()
-    assert build.call_args.args[0] == {}
+    with patch("src.agents.deep_research.graph._build_graph", return_value=compiled) as build:
+        assert graph({}, runtime) is compiled
+    assert isinstance(build.call_args.args[0], Context)

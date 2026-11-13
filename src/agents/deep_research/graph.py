@@ -1,10 +1,6 @@
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from functools import partial
 from typing import Any, Literal
 
-from langchain_core.tools import BaseTool
-from langchain.mcp import MCPAdapter
 from langgraph.graph import StateGraph, END
 from langgraph.runtime import Runtime
 from langgraph_sdk.runtime import ServerRuntime
@@ -45,8 +41,8 @@ async def should_continue(state: ResearchState, runtime: Runtime[Context]) -> Li
     return "planner"
 
 
-def _build_graph(tools_dict: dict[str, BaseTool], ctx: Context) -> Any:
-    """Build and compile the graph, injecting tools and the model into nodes."""
+def _build_graph(ctx: Context) -> Any:
+    """Build and compile the graph with models for each node."""
     builder = StateGraph(state_schema=ResearchState, context_schema=Context)
 
     # Initialize models for different roles using the model_repo to avoid redundant creation
@@ -59,14 +55,10 @@ def _build_graph(tools_dict: dict[str, BaseTool], ctx: Context) -> Any:
     extractor_model = get_model("extractor_profile")
     synthesizer_model = get_model("synthesizer_profile")
 
-    # Bind tools and models to nodes
-    web_search = tools_dict.get("web_search")
-    web_crawl_url = tools_dict.get("web_crawl_url")
-
     # Add nodes
     builder.add_node("planner", partial(planner_node, model=planner_model))
-    builder.add_node("search", partial(search_node, model=search_model, web_search=web_search))
-    builder.add_node("crawl", partial(crawl_node, web_crawl_url=web_crawl_url))
+    builder.add_node("search", partial(search_node, model=search_model))
+    builder.add_node("crawl", crawl_node)
     builder.add_node("extract", partial(extraction_node, model=extractor_model))
     builder.add_node("synthesizer", partial(synthesizer_node, model=synthesizer_model))
 
@@ -100,38 +92,14 @@ def _extract_context(runtime: ServerRuntime[Context]) -> Context:
     return Context()
 
 
-@asynccontextmanager
-async def graph(
+def graph(
     config: dict[str, Any],
     runtime: ServerRuntime[Context],
-) -> AsyncIterator[Any]:
-    """Factory for the Deep Research Agent with MCP lifecycle management."""
-    ctx = _extract_context(runtime)
-
-    if runtime.execution_runtime is not None and ctx.enable_mcp:
-        # Keep the MCP client (and its session) open for the whole run so the
-        # injected tools remain callable while the graph executes.
-        adapter = MCPAdapter(ctx.mcp_server_url)
-        async with adapter:
-            tools = _validated_tools(await adapter.list_tools())
-            yield _build_graph(tools, ctx)
-    else:
-        yield _build_graph({}, ctx)
+) -> Any:
+    """Build the server graph without contacting MCP during inspection."""
+    return _build_graph(_extract_context(runtime))
 
 
-@asynccontextmanager
-async def local_graph(ctx: Context) -> AsyncIterator[Any]:
-    """Keep tools connected while a local caller executes the graph."""
-    if ctx.enable_mcp:
-        async with MCPAdapter(ctx.mcp_server_url) as adapter:
-            yield _build_graph(_validated_tools(await adapter.list_tools()), ctx)
-    else:
-        yield _build_graph({}, ctx)
-
-
-def _validated_tools(tools: list[BaseTool]) -> dict[str, BaseTool]:
-    by_name = {tool.name: tool for tool in tools}
-    missing = {"web_search", "web_crawl_url"} - by_name.keys()
-    if missing:
-        raise ValueError(f"MCP server is missing required tools: {sorted(missing)}")
-    return by_name
+def local_graph(ctx: Context) -> Any:
+    """Build the local graph; nodes discover MCP tools when needed."""
+    return _build_graph(ctx)

@@ -9,11 +9,11 @@ from src.agents.deep_research.graph import local_graph
 
 
 async def research(query: str, ctx: Context) -> dict:
-    async with local_graph(ctx) as agent:
-        return cast(dict[str, Any], await agent.ainvoke(
-            {"query": query}, context=ctx,
-            config={"recursion_limit": ctx.max_iterations * 5 + 5},
-        ))
+    agent = local_graph(ctx)
+    return cast(dict[str, Any], await agent.ainvoke(
+        {"query": query}, context=ctx,
+        config={"recursion_limit": ctx.max_iterations * 5 + 5},
+    ))
 
 
 def main() -> None:

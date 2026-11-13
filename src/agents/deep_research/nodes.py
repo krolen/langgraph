@@ -15,6 +15,7 @@ from src.agents.deep_research.models import SearchResult, WebSearchResponse
 from src.agents.deep_research.context import Context
 from src.agents.deep_research.state import ResearchState
 from src.agents.deep_research.utils import extract_text_from_mcp_result
+from src.agents.nasmcp import NASMCPServer
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,7 @@ async def planner_node(state: ResearchState, runtime: Runtime[Context], model: B
     }
 
 
-async def search_node(state: ResearchState, runtime: Runtime[Context], model: BaseChatModel, web_search: BaseTool | None) -> \
+async def search_node(state: ResearchState, runtime: Runtime[Context], model: BaseChatModel, web_search: BaseTool | None = None) -> \
 Dict[str, Any]:
     """
     Executes search queries and lets the LLM select the most relevant URLs.
@@ -112,9 +113,15 @@ Dict[str, Any]:
         logger.info("No queries to execute.")
         return {"selected_urls": []}
 
-    if not web_search:
-        logger.error("web_search tool not available")
-        return {"selected_urls": []}
+    if web_search is None:
+        ctx = _get_context(runtime)
+        if not ctx.enable_mcp:
+            return {"selected_urls": []}
+        try:
+            web_search = await NASMCPServer(ctx.mcp_server_url).search_tool()
+        except Exception as e:
+            logger.error(f"Search tool unavailable: {e}")
+            return {"selected_urls": [], "errors": [f"Search unavailable: {e}"]}
 
     logger.info(f"Executing {len(queries)} search queries")
     all_found_urls = []
@@ -180,7 +187,7 @@ Dict[str, Any]:
     return {"selected_urls": selected_urls}
 
 
-async def crawl_node(state: ResearchState, runtime: Runtime[Context], web_crawl_url: BaseTool | None) -> Dict[str, Any]:
+async def crawl_node(state: ResearchState, runtime: Runtime[Context], web_crawl_url: BaseTool | None = None) -> Dict[str, Any]:
     """
     Crawls the selected URLs and stores raw content.
     """
@@ -190,9 +197,15 @@ async def crawl_node(state: ResearchState, runtime: Runtime[Context], web_crawl_
         logger.info("No URLs to crawl.")
         return {"raw_crawl_results": {}}
 
-    if not web_crawl_url:
-        logger.error("web_crawl_url tool not available")
-        return {"raw_crawl_results": {}}
+    if web_crawl_url is None:
+        ctx = _get_context(runtime)
+        if not ctx.enable_mcp:
+            return {"raw_crawl_results": {}}
+        try:
+            web_crawl_url = await NASMCPServer(ctx.mcp_server_url).crawl_tool()
+        except Exception as e:
+            logger.error(f"Crawl tool unavailable: {e}")
+            return {"raw_crawl_results": {}, "errors": [f"Crawl unavailable: {e}"]}
 
     logger.info(f"Crawling {len(selected_urls)} URLs: {selected_urls}")
 

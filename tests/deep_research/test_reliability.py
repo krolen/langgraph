@@ -1,7 +1,7 @@
 from typing import Any
 import asyncio
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from langgraph.runtime import Runtime
@@ -10,6 +10,7 @@ from src.agents.deep_research.state import ResearchState
 from src.agents.deep_research.context import Context
 from src.agents.deep_research.nodes import crawl_node, extraction_node, search_node, format_knowledge
 from src.agents.llm_wrapper import ConcurrencyLimitedLLM, ModelRepository
+from src.agents.nasmcp import NASMCPServer
 
 
 @pytest.mark.asyncio
@@ -61,6 +62,27 @@ async def test_failed_crawls_and_extractions_do_not_become_evidence() -> Any:
     )
     assert extracted["knowledge_base"] == {}
     assert extracted["errors"]
+
+
+@pytest.mark.asyncio
+async def test_crawl_discovers_tool_again_after_temporary_outage() -> None:
+    crawl = AsyncMock()
+    crawl.name = NASMCPServer.WEB_CRAWL_URL
+    crawl.ainvoke.return_value = "Recovered content"
+    state = ResearchState(query="test", selected_urls=["https://example.com"])
+    runtime = Runtime(context=Context())
+
+    with patch("src.agents.nasmcp.MCPAdapter") as adapter_class:
+        adapter_class.return_value.list_tools = AsyncMock(
+            side_effect=[OSError("offline"), [crawl]]
+        )
+        unavailable = await crawl_node(state, runtime)
+        recovered = await crawl_node(state, runtime)
+
+    assert unavailable["raw_crawl_results"] == {}
+    assert "offline" in unavailable["errors"][0]
+    assert recovered["raw_crawl_results"]["https://example.com"] == "Recovered content"
+    assert adapter_class.return_value.list_tools.await_count == 2
 
 
 def test_evidence_budget_keeps_recent_sources() -> Any:
@@ -115,16 +137,14 @@ async def test_empty_evidence_does_not_generate_claims() -> None:
 
 @pytest.mark.asyncio
 async def test_local_entry_point_passes_context(monkeypatch: Any) -> None:
-    from contextlib import asynccontextmanager
     from src import main
     agent = AsyncMock()
     agent.ainvoke.return_value = {"final_report": "test report"}
     ctx = Context(max_iterations=4)
 
-    @asynccontextmanager
-    async def factory(received: Context) -> Any:
+    def factory(received: Context) -> Any:
         assert received is ctx
-        yield agent
+        return agent
 
     monkeypatch.setattr(main, "local_graph", factory)
     assert await main.research("question", ctx) == {"final_report": "test report"}

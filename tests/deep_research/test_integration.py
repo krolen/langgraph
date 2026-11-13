@@ -12,6 +12,7 @@ from langchain_core.messages import AIMessage
 from src.agents.deep_research.context import Context
 from src.agents.deep_research.graph import graph as graph_factory
 from src.agents.deep_research.state import ResearchState
+from src.agents.nasmcp import NASMCPServer
 
 # Setup logging to file
 os.makedirs("logs", exist_ok=True)
@@ -72,11 +73,11 @@ async def test_deep_research_agent_integration(iterations: Any) -> Any:
         "results": [{"title": "Example", "url": "https://example.com/page1", "content": "Test content"}]
     })
     mock_search_tool = AsyncMock()
-    mock_search_tool.name = "web_search"
+    mock_search_tool.name = NASMCPServer.WEB_SEARCH
     mock_search_tool.ainvoke.return_value = [{"type": "text", "text": mock_search_result_json}]
 
     mock_crawl_tool = AsyncMock()
-    mock_crawl_tool.name = "web_crawl_url"
+    mock_crawl_tool.name = NASMCPServer.WEB_CRAWL_URL
     mock_crawl_tool.ainvoke.return_value = [{"type": "text", "text": "Page content: The refactor is successful."}]
 
     # 3. Create Mock Runtime
@@ -90,27 +91,19 @@ async def test_deep_research_agent_integration(iterations: Any) -> Any:
 
     # 4. Patch and Execute
     with patch("src.agents.deep_research.graph.model_repo.get_model_by_profile", return_value=mock_llm), \
-         patch("src.agents.deep_research.graph.MCPAdapter") as mock_mcp_class:
+         patch("src.agents.nasmcp.MCPAdapter") as mock_mcp_class:
         
         mock_mcp_instance = mock_mcp_class.return_value
-        mock_mcp_instance.__aenter__ = AsyncMock(return_value=mock_mcp_instance)
-        mock_mcp_instance.__aexit__ = AsyncMock(return_value=None)
         mock_mcp_instance.list_tools = AsyncMock(return_value=[mock_search_tool, mock_crawl_tool])
 
-        async with graph_factory({}, mock_runtime) as agent:
-            logger.info("Agent built via factory (mocked).")
-            initial_state = asdict(ResearchState(
-                query="Verify integration",
-                iteration_count=0
-            ))
-            
-            logger.info("Invoking agent...")
-            result = await agent.ainvoke(initial_state, context=ctx)
-            
-            # 5. Assertions
-            assert "final_report" in result
-            assert "The refactor is successful" in result["final_report"]
-            assert result["iteration_count"] == iterations
-            
-            logger.info(f"Test result: {result['final_report']}")
-            logger.info("Integration test successful.")
+        agent = graph_factory({}, mock_runtime)
+        logger.info("Agent built via factory (mocked).")
+        initial_state = asdict(ResearchState(query="Verify integration", iteration_count=0))
+        logger.info("Invoking agent...")
+        result = await agent.ainvoke(initial_state, context=ctx)
+
+        assert "final_report" in result
+        assert "The refactor is successful" in result["final_report"]
+        assert result["iteration_count"] == iterations
+        assert mock_mcp_instance.list_tools.await_count == iterations * 2
+        logger.info(f"Test result: {result['final_report']}")
